@@ -39,21 +39,76 @@ Seurat::DimPlot(obj, reduction = "umap")
 obj <- Seurat::RunTSNE(obj, dims = 1:ndims)
 Seurat::DimPlot(obj, reduction = "tsne")
 
-######## automated cell annotation - singleR
-celldex::surveyReferences()
-blueprint_ref <- celldex::BlueprintEncodeData(ensembl = TRUE)
-hpca_ref <- celldex::HumanPrimaryCellAtlasData(ensembl = TRUE)
+SeuratObject::SaveSeuratRds(obj, file = paste0("results/",sample,".h5Seurat"))
+
+# ######## automated cell annotation - singleR
+# celldex::surveyReferences()
+# blueprint_ref <- celldex::BlueprintEncodeData(ensembl = TRUE)
+# hpca_ref <- celldex::HumanPrimaryCellAtlasData(ensembl = TRUE)
+# count_mat <- SeuratObject::GetAssayData(obj, assay = "RNA", layer = "data")
+# #count_mat@Dimnames[[1]] <- seurat_obj[["RNA"]]@meta.data$gene_symbol
+# pred.obj <- SingleR::SingleR(test = count_mat, 
+#                     ref = blueprint_ref, 
+#                     assay.type.test=1,
+#                     labels = blueprint_ref$label.main)
+# SingleR::plotScoreHeatmap(pred.obj)
+# SingleR::plotDeltaDistribution(pred.obj, ncol = 3)
+# # add singleR results to seurat obj
+# singler_out <- pred.obj$labels
+# names(singler_out) <- rownames(pred.obj)
+# obj@meta.data$singler <- singler_out
+# Seurat::DimPlot(obj, reduction = "umap", group.by = "singler")
+# Seurat::DimPlot(obj, reduction = "umap", group.by = "singler", split.by = "singler", ncol = 3)
+
+######## automated cell annotation - singleR - literature ref
+path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"
+sce <- readRDS(paste0(path_ref, "/aat1699-young.rds"))
+sce@NAMES <- sce@elementMetadata@listData[["EnsemblID"]]
+
+# explore reference
+ref_coldata <- as(colData(sce), "DataFrame") %>% as.data.frame()
+freq <- table(ref_coldata$Category, ref_coldata$Cell_type1) %>% 
+  as.data.frame() %>%
+  filter(Freq > 0)
+
+# cell exclusion
+sce <- sce[, !sce$Cell_type1 == "Junk"]
+sce <- sce[, sce$Category == "Foetal_kidney" | sce$Category == "Foetal_kidney_immune" | sce$Category == "Kidney_tumour"]
+
+sce <- scuttle::logNormCounts(sce) 
 count_mat <- SeuratObject::GetAssayData(obj, assay = "RNA", layer = "data")
-#count_mat@Dimnames[[1]] <- seurat_obj[["RNA"]]@meta.data$gene_symbol
-pred.obj <- SingleR::SingleR(test = count_mat, 
-                    ref = blueprint_ref, 
-                    assay.type.test=1,
-                    labels = blueprint_ref$label.main)
-SingleR::plotScoreHeatmap(pred.obj)
-SingleR::plotDeltaDistribution(pred.obj, ncol = 3)
-# add singleR results to seurat obj
-singler_out <- pred.obj$labels
-names(singler_out) <- rownames(pred.obj)
+# label category
+pred.obj.category <- SingleR::SingleR(test = count_mat, # normalized count_mat
+                             ref = sce, 
+                             assay.type.test=1,
+                             labels = sce$Category,
+                             num.threads = 6)
+SingleR::plotScoreHeatmap(pred.obj.category)
+SingleR::plotDeltaDistribution(pred.obj.category, ncol = 3)
+# all.markers <- metadata(pred.obj.category)$de.genes
+# rds$labels <- pred.obj.category$labels
+# scater::plotHeatmap(rds, order_columns_by="labels", features = unique(unlist(all.markers)) )
+
+singler_out <- pred.obj.category$labels
+names(singler_out) <- rownames(pred.obj.category)
+obj@meta.data$singler <- singler_out
+Seurat::DimPlot(obj, reduction = "umap", group.by = "singler")
+Seurat::DimPlot(obj, reduction = "umap", group.by = "singler", split.by = "singler", ncol = 3)
+
+# label celltype
+pred.obj.celltype <- SingleR::SingleR(test = count_mat, # normalized count_mat
+                                      ref = sce, 
+                                      assay.type.test=1,
+                                      labels = sce$Cell_type1,
+                                      num.threads = 6)
+SingleR::plotScoreHeatmap(pred.obj.celltype)
+SingleR::plotDeltaDistribution(pred.obj.celltype, ncol = 3)
+# all.markers <- metadata(pred.obj.celltype)$de.genes
+# rds$labels <- pred.obj.celltype$labels
+# scater::plotHeatmap(rds, order_columns_by="labels", features = unique(unlist(all.markers)) )
+
+singler_out <- pred.obj.celltype$labels
+names(singler_out) <- rownames(pred.obj.celltype)
 obj@meta.data$singler <- singler_out
 Seurat::DimPlot(obj, reduction = "umap", group.by = "singler")
 Seurat::DimPlot(obj, reduction = "umap", group.by = "singler", split.by = "singler", ncol = 3)

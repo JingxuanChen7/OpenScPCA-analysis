@@ -9,6 +9,8 @@ BiocManager::install("SingleR")
 #sudo apt-get install libcurl4-openssl-dev
 BiocManager::install("ensembldb")
 BiocManager::install("scRNAseq")
+BiocManager::install("scuttle")
+BiocManager::install("scater")
 
 install.packages("viridis")
 install.packages("pheatmap")
