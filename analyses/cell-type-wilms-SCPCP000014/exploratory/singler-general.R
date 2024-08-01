@@ -1,23 +1,25 @@
+library(dplyr)
+
 path_proj <- "/home/lightsail-user/wilms_tumor/OpenScPCA-analysis/data/current/SCPCP000014"
 path_meta <- paste0(path_proj,"/single_cell_metadata.tsv")
 meta <- read.table(path_meta, sep = "\t", header = T, stringsAsFactors = F)
 
-sample <- "SCPCS000514"; library <- "SCPCL000846"
+sample <- "SCPCS000517"; library <- "SCPCL000849"
 rds <- readRDS(paste0(path_proj,"/",sample,"/",library,"_processed.rds"))
 
 ######## create seurat object from the SCE counts matrix
-seurat_obj <- SeuratObject::CreateSeuratObject(counts = counts(rds),
+seurat_obj <- SeuratObject::CreateSeuratObject(counts = SingleCellExperiment::counts(rds),
                                  assay = "RNA",
                                  project = library)
 # convert colData and rowData to data.frame for use in the Seurat object
-cell_metadata <- as.data.frame(colData(rds))
-row_metadata <- as.data.frame(rowData(rds))
+cell_metadata <- as.data.frame(SingleCellExperiment::colData(rds))
+row_metadata <- as.data.frame(SingleCellExperiment::rowData(rds))
 # add cell metadata (colData) from SingleCellExperiment to Seurat
 seurat_obj@meta.data <- cell_metadata
 # add row metadata (rowData) from SingleCellExperiment to Seurat
 seurat_obj[["RNA"]]@meta.data <- row_metadata
 # add metadata from SingleCellExperiment to Seurat
-seurat_obj@misc <- metadata(rds)
+seurat_obj@misc <- S4Vectors::metadata(rds)
 # make a copy for processing
 obj <- seurat_obj
 
@@ -60,55 +62,49 @@ SeuratObject::SaveSeuratRds(obj, file = paste0("results/",sample,".h5Seurat"))
 # Seurat::DimPlot(obj, reduction = "umap", group.by = "singler")
 # Seurat::DimPlot(obj, reduction = "umap", group.by = "singler", split.by = "singler", ncol = 3)
 
+
 ######## automated cell annotation - singleR - literature ref
+obj <- SeuratObject::LoadSeuratRds(paste0("results/",sample,".h5Seurat"))
 path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"
 sce <- readRDS(paste0(path_ref, "/aat1699-young.rds"))
 sce@NAMES <- sce@elementMetadata@listData[["EnsemblID"]]
 
 # explore reference
-ref_coldata <- as(colData(sce), "DataFrame") %>% as.data.frame()
+ref_coldata <- as(SummarizedExperiment::colData(sce), "DataFrame") %>% 
+  as.data.frame() %>%
+  filter(startsWith(Source, "Wilms"))
 freq <- table(ref_coldata$Category, ref_coldata$Cell_type1) %>% 
   as.data.frame() %>%
   filter(Freq > 0)
 
 # cell exclusion
 sce <- sce[, !sce$Cell_type1 == "Junk"]
-sce <- sce[, sce$Category == "Foetal_kidney" | sce$Category == "Foetal_kidney_immune" | sce$Category == "Kidney_tumour"]
+sce <- sce[, startsWith(sce$Source, "Wilms")]
+# cell_types <- c("Wilms_tumour_and_fibroblast","Wilms_tumour","Ureter_epithelium","Plasmacytoid dendritic cell",
+#                 "Renal_cell_carcinoma","Plasma cell","Nephron_others")
+# sce <- sce[, sce$Cell_type1 %in% cell_types]
+#sce <- sce[, sce$Category == "Foetal_kidney" | sce$Category == "Foetal_kidney_immune" | sce$Category == "Kidney_tumour"]
 
 sce <- scuttle::logNormCounts(sce) 
 count_mat <- SeuratObject::GetAssayData(obj, assay = "RNA", layer = "data")
 # label category
-pred.obj.category <- SingleR::SingleR(test = count_mat, # normalized count_mat
+pred.obj <- SingleR::SingleR(test = count_mat, # normalized count_mat
                              ref = sce, 
                              assay.type.test=1,
-                             labels = sce$Category,
+                             labels = sce$Cell_type1,
                              num.threads = 6)
-SingleR::plotScoreHeatmap(pred.obj.category)
-SingleR::plotDeltaDistribution(pred.obj.category, ncol = 3)
-# all.markers <- metadata(pred.obj.category)$de.genes
-# rds$labels <- pred.obj.category$labels
+SingleR::plotScoreHeatmap(pred.obj)
+SingleR::plotDeltaDistribution(pred.obj, ncol = 3)
+# all.markers <- metadata(pred.obj)$de.genes
+# rds$labels <- pred.obj$labels
 # scater::plotHeatmap(rds, order_columns_by="labels", features = unique(unlist(all.markers)) )
 
-singler_out <- pred.obj.category$labels
-names(singler_out) <- rownames(pred.obj.category)
+singler_out <- pred.obj$labels
+names(singler_out) <- rownames(pred.obj)
 obj@meta.data$singler <- singler_out
 Seurat::DimPlot(obj, reduction = "umap", group.by = "singler")
 Seurat::DimPlot(obj, reduction = "umap", group.by = "singler", split.by = "singler", ncol = 3)
+Seurat::DimPlot(obj, reduction = "umap", group.by = "seurat_clusters")
+Seurat::DimPlot(obj, reduction = "tsne", group.by = "seurat_clusters", split.by = "seurat_clusters", ncol = 3)
 
-# label celltype
-pred.obj.celltype <- SingleR::SingleR(test = count_mat, # normalized count_mat
-                                      ref = sce, 
-                                      assay.type.test=1,
-                                      labels = sce$Cell_type1,
-                                      num.threads = 6)
-SingleR::plotScoreHeatmap(pred.obj.celltype)
-SingleR::plotDeltaDistribution(pred.obj.celltype, ncol = 3)
-# all.markers <- metadata(pred.obj.celltype)$de.genes
-# rds$labels <- pred.obj.celltype$labels
-# scater::plotHeatmap(rds, order_columns_by="labels", features = unique(unlist(all.markers)) )
 
-singler_out <- pred.obj.celltype$labels
-names(singler_out) <- rownames(pred.obj.celltype)
-obj@meta.data$singler <- singler_out
-Seurat::DimPlot(obj, reduction = "umap", group.by = "singler")
-Seurat::DimPlot(obj, reduction = "umap", group.by = "singler", split.by = "singler", ncol = 3)
