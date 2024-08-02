@@ -107,4 +107,32 @@ Seurat::DimPlot(obj, reduction = "umap", group.by = "singler", split.by = "singl
 Seurat::DimPlot(obj, reduction = "umap", group.by = "seurat_clusters")
 Seurat::DimPlot(obj, reduction = "tsne", group.by = "seurat_clusters", split.by = "seurat_clusters", ncol = 3)
 
+######## automated cell annotation - singleR - kidney atlas
+obj <- SeuratObject::LoadSeuratRds(paste0("results/",sample,".h5Seurat"))
+path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"
+sce <- zellkonverter::readH5AD(paste0(path_ref, "/Fetal_full_v3.h5ad"))
 
+sce <- scuttle::logNormCounts(sce) 
+rownames(sce) <- sce@rowRanges@elementMetadata@listData[["ID"]]
+count_mat <- SeuratObject::GetAssayData(obj, assay = "RNA", layer = "data")
+# label category
+pred.obj <- SingleR::SingleR(test = count_mat, # normalized count_mat
+                             ref = sce, 
+                             assay.type.test=1,
+                             labels = sce$compartment,
+                             num.threads = 6)
+SingleR::plotScoreHeatmap(pred.obj)
+SingleR::plotDeltaDistribution(pred.obj, ncol = 3)
+singler_out <- pred.obj$labels
+names(singler_out) <- rownames(pred.obj)
+obj@meta.data$singler <- singler_out
+Seurat::DimPlot(obj, reduction = "umap", group.by = "singler")
+Seurat::DimPlot(obj, reduction = "umap", group.by = "singler", split.by = "singler", ncol = 3)
+Seurat::DimPlot(obj, reduction = "umap", group.by = "seurat_clusters")
+
+
+# batch effect correction of reference & sample
+common_genes <- intersect(rownames(rds),rownames(sce))
+rds <- rds[common_genes,]
+sce <- sce[common_genes,]
+ref_sample_combine <- SingleCellExperiment::cbind(sce, rds)

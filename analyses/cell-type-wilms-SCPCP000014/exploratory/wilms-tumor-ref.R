@@ -30,3 +30,8 @@ sce <- sce[, !is.na(sce$Cell_type1)]
 sce <- sce[, !is.na(sce$Category)]
 readr::write_rds(sce, paste0(path_ref, "/aat1699-young.rds"))
 
+
+########################################################################
+path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"
+sce <- zellkonverter::readH5AD(paste0(path_ref, "/Fetal_full_v3.h5ad"))
+

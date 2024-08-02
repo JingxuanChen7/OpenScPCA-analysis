@@ -13,23 +13,27 @@ BiocManager::install("scuttle")
 BiocManager::install("scater")
 #sudo apt install jags r-cran-rjags
 BiocManager::install("infercnv")
+BiocManager::install("zellkonverter")
+BiocManager::install("scMerge")
+BiocManager::install("harmony")
 
 install.packages("viridis")
 install.packages("pheatmap")
 
-# install cellassign
+
+# install tensorflow & cellassign
 install.packages("tensorflow")
 install.packages("devtools")
-reticulate::install_python("3.10") 
-reticulate::virtualenv_create("r-tensorflow", version = "3.10")
-reticulate::use_virtualenv("r-tensorflow")
-reticulate::use_python("/home/lightsail-user/.virtualenvs/r-tensorflow/bin/python")
-tensorflow::install_tensorflow(method = "virtualenv",
-                               envname = "r-tensorflow", 
+library(reticulate)
+py_version <- "3.10"
+env_name <- "tf"
+reticulate::conda_create(envname = env_name, python_version = py_version)
+tensorflow::install_tensorflow(envname = env_name, 
+                               method = "conda",
                                extra_packages = "tensorflow-probability",
-                               python_version = "3.10")
-devtools::install_github("Irrationone/cellassign")
-Sys.setenv(RETICULATE_PYTHON="/home/lightsail-user/.virtualenvs/r-tensorflow/bin/python")
+                               new_env = F)
+reticulate::use_condaenv(env_name)
 library(tensorflow)
 tensorflow::tf_config()
-install_tensorflow()
+reticulate::py_config()
+devtools::install_github("Irrationone/cellassign")
