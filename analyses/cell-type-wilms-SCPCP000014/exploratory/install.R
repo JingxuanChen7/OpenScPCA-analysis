@@ -2,6 +2,8 @@
 install.packages("igraph")
 install.packages("Seurat")
 install.packages("tidyverse")
+install.packages("HGNChelper")
+install.packages("openxlsx")
 
 BiocManager::install("celldex")
 BiocManager::install("SingleCellExperiment")
