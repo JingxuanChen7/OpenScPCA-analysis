@@ -4,6 +4,7 @@ install.packages("Seurat")
 install.packages("tidyverse")
 install.packages("HGNChelper")
 install.packages("openxlsx")
+install.packages("ggpubr")
 
 BiocManager::install("celldex")
 BiocManager::install("SingleCellExperiment")
@@ -18,6 +19,9 @@ BiocManager::install("infercnv")
 BiocManager::install("zellkonverter")
 BiocManager::install("scMerge")
 BiocManager::install("harmony")
+#sudo apt-get install -y libmagick++-dev
+BiocManager::install("SpatialExperiment")
+BiocManager::install("singleCellTK")
 
 install.packages("viridis")
 install.packages("pheatmap")

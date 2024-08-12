@@ -2,6 +2,7 @@ library("openxlsx")
 library("dplyr")
 library("Seurat")
 library("HGNChelper")
+library("ggpubr")
 
 path_proj <- "/home/lightsail-user/wilms_tumor/OpenScPCA-analysis/data/current/SCPCP000014"
 path_meta <- paste0(path_proj,"/single_cell_metadata.tsv")
@@ -20,20 +21,16 @@ tissue <- "Kidney" # e.g. Immune system,Pancreas,Liver,Eye,Kidney,Brain,Lung,Adr
 # prepare gene sets
 gs_list <- gene_sets_prepare(db_, tissue)
 
-# extract scaled scRNA-seq matrix
+# check if marker genes exists
+keygenes <- unique(unlist(gs_list))
 gene_meta <- obj@assays[["RNA"]]@meta.data %>%
   select(c(gene_ids, gene_symbol))
-scRNAseqData_scaled <- obj@assays[["RNA"]]$scale.data %>%
-  as.data.frame() %>%
-  tibble::rownames_to_column() %>%
-  left_join(gene_meta, by = c("rowname" = "gene_ids")) %>%
-  mutate(gene_symbol = ifelse(is.na(gene_symbol), rowname, gene_symbol)) %>%
-  select(-c(rowname)) %>%
-  distinct(gene_symbol, .keep_all = TRUE) %>%
-  tibble::column_to_rownames(var = "gene_symbol") %>%
-  as.matrix()
+nrow(gene_meta[keygenes,]) == length(keygenes)
 
-# run ScType
+# extract scaled scRNA-seq matrix
+scRNAseqData_scaled <- obj@assays[["RNA"]]$scale.data %>% as.matrix()
+
+########### run ScType code ########### 
 es.max <- sctype_score(scRNAseqData = scRNAseqData_scaled, scaled = TRUE, gs = gs_list$gs_positive, gs2 = gs_list$gs_negative)
 
 # NOTE: scRNAseqData parameter should correspond to your input scRNA-seq matrix. For raw (unscaled) count matrix set scaled = FALSE
@@ -41,12 +38,46 @@ es.max <- sctype_score(scRNAseqData = scRNAseqData_scaled, scaled = TRUE, gs = g
 # or to "integrated" for joint dataset analysis. To apply sctype with unscaled data, use e.g. pbmc[["RNA"]]$counts or pbmc[["RNA"]]@counts, with scaled set to FALSE.
 
 # merge by cluster
-cL_resutls <- do.call("rbind", lapply(unique(pbmc@meta.data$seurat_clusters), function(cl){
-  es.max.cl = sort(rowSums(es.max[ ,rownames(pbmc@meta.data[pbmc@meta.data$seurat_clusters==cl, ])]), decreasing = !0)
-  head(data.frame(cluster = cl, type = names(es.max.cl), scores = es.max.cl, ncells = sum(pbmc@meta.data$seurat_clusters==cl)), 10)
+Seurat::DimPlot(obj, reduction = "umap", group.by = "seurat_clusters")
+cL_resutls <- do.call("rbind", lapply(unique(obj@meta.data$seurat_clusters), function(cl){
+  es.max.cl = sort(rowSums(es.max[ ,rownames(obj@meta.data[obj@meta.data$seurat_clusters==cl, ])]), decreasing = !0)
+  head(data.frame(cluster = cl, type = names(es.max.cl), scores = es.max.cl, ncells = sum(obj@meta.data$seurat_clusters==cl)), 10)
 }))
 sctype_scores <- cL_resutls %>% group_by(cluster) %>% top_n(n = 1, wt = scores)  
 
 # set low-confident (low ScType score) clusters to "unknown"
 sctype_scores$type[as.numeric(as.character(sctype_scores$scores)) < sctype_scores$ncells/4] <- "Unknown"
-print(sctype_scores[,1:3])
+
+# add annotation
+annoobj <- obj
+annoobj@meta.data <- obj@meta.data %>%
+  left_join(sctype_scores[,1:2], by = c("seurat_clusters" = "cluster")) %>%
+  mutate(scType = factor(type)) %>%
+  data.frame(row.names = .$barcodes)
+p1 <- Seurat::DimPlot(annoobj, reduction = "umap", group.by = "scType", label = T) + 
+  theme(legend.position = "bottom") + 
+  guides(color = guide_legend(ncol=2, override.aes = list(size = 3)))
+p2 <- Seurat::DimPlot(annoobj, reduction = "umap", group.by = "seurat_clusters") + 
+  theme(legend.position = "bottom")
+ggarrange(p1, p2, ncol = 2)
+
+# # sample level prediction pretty messy
+# per_sample <- apply(es.max, MARGIN = 2, which.max) %>% 
+#   data.frame(scType_sample = rownames(es.max)[.]) %>%
+#   tibble::rownames_to_column(var = "barcodes")
+# annoobj@meta.data <- annoobj@meta.data %>%
+#   left_join(per_sample[,c(1,3)], by = c("barcodes")) %>%
+#   mutate(scType_sample = factor(scType_sample)) %>%
+#   data.frame(row.names = .$barcodes)
+# Seurat::DimPlot(annoobj, reduction = "umap", group.by = "scType_sample") + 
+#   theme(legend.position = "right") + 
+#   guides(color = guide_legend(ncol=1, override.aes = list(size = 3)))
+
+## dot plot of marker genes
+markers <- gs_list$gs_positive[unique(sctype_scores$type)]
+DotPlot(annoobj, features = markers, group.by = "scType", cols = c("blue", "red")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+
+
+
+
