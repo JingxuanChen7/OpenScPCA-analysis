@@ -5,6 +5,7 @@ install.packages("tidyverse")
 install.packages("HGNChelper")
 install.packages("openxlsx")
 install.packages("ggpubr")
+install.packages("Polychrome")
 
 BiocManager::install("celldex")
 BiocManager::install("SingleCellExperiment")

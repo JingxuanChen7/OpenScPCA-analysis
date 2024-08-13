@@ -13,3 +13,25 @@ cluster_info <- readxl::read_xlsx(path_supp_table, sheet = 2, skip = 1) %>%
 filter_markers <- left_join(markers, cluster_info, by = c("Cluster" = "Cluster_ID") ) %>%
   filter(!is.na(Category) & !is.na(Cell_type1)) %>%
   filter(grepl("tumour", Category))
+
+####################### kidney atlas ####################### 
+path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"
+sce <- zellkonverter::readH5AD(paste0(path_ref, "/Fetal_full_v3.h5ad"))
+seurat_obj <- SeuratObject::CreateSeuratObject(counts = SingleCellExperiment::counts(sce),
+                                               assay = "RNA",
+                                               project = library)
+# convert colData and rowData to data.frame for use in the Seurat object
+cell_metadata <- as.data.frame(SingleCellExperiment::colData(sce))
+row_metadata <- as.data.frame(SingleCellExperiment::rowData(sce))
+# add cell metadata (colData) from SingleCellExperiment to Seurat
+seurat_obj@meta.data <- cell_metadata
+# add row metadata (rowData) from SingleCellExperiment to Seurat
+seurat_obj[["RNA"]]@meta.data <- row_metadata
+# add metadata from SingleCellExperiment to Seurat
+seurat_obj@misc <- S4Vectors::metadata(sce)
+# make a copy for processing
+obj <- seurat_obj
+# log transform counts
+obj <- Seurat::NormalizeData(obj, normalization.method = "LogNormalize")
+
+
