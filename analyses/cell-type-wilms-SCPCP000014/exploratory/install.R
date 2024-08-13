@@ -42,4 +42,5 @@ reticulate::use_condaenv(env_name)
 library(tensorflow)
 tensorflow::tf_config()
 reticulate::py_config()
-devtools::install_github("Irrationone/cellassign")
+devtools::install_github("JingxuanChen7/cellassign")
+# pip install tf-keras

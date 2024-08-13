@@ -8,6 +8,9 @@ reticulate::use_condaenv("tf")
 library(cellassign)
 tensorflow::tf_config()
 
+data(example_sce)
+data(example_marker_mat)
+
 path_proj <- "/home/lightsail-user/wilms_tumor/OpenScPCA-analysis/data/current/SCPCP000014"
 path_meta <- paste0(path_proj,"/single_cell_metadata.tsv")
 meta <- read.table(path_meta, sep = "\t", header = T, stringsAsFactors = F)
@@ -25,8 +28,6 @@ db_ <- "https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/ScTyp
 tissue <- "Kidney" # e.g. Immune system,Pancreas,Liver,Eye,Kidney,Brain,Lung,Adrenal,Heart,Intestine,Muscle,Placenta,Spleen,Stomach,Thymus 
 # prepare gene sets
 gs_list <- gene_sets_prepare(db_, tissue)
-
-s <- sizeFactors(rds)
 
 marker_mat <- marker_list_to_mat(gs_list$gs_positive)
 marker_mat <- marker_mat[rownames(marker_mat) %in% rownames(rds),]
