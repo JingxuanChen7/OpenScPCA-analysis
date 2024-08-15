@@ -21,24 +21,36 @@ tissue <- "Kidney" # e.g. Immune system,Pancreas,Liver,Eye,Kidney,Brain,Lung,Adr
 # prepare gene sets
 gs_list <- gene_sets_prepare(db_, tissue)
 
+# marker genes from atlas-compart
+markers_file <- read.csv(paste0("./results/degenes_compart.csv"))
+markers <- markers_file %>%
+  filter(p_val_adj < 0.05 & pct.1 > 0.5 & pct.2 < 0.1 )
+gs_list <- by(markers$gene, markers$cluster, head, n=10)
+gs_list$fetal_nephron <- gs_list$fetal_nephron[gs_list$fetal_nephron != "EPCAM"]
+# marker genes from atlas-celltype
+markers_file <- read.csv(paste0("./results/degenes_celltype.csv"))
+markers <- markers_file %>%
+  filter(p_val_adj < 0.05 & pct.1 > 0.5 & pct.2 < 0.1 )
+gs_list <- by(markers$gene, markers$cluster, head, n=10)
+
 # check if marker genes exists
-keygenes <- unique(unlist(gs_list))
-gene_meta <- obj@assays[["RNA"]]@meta.data %>%
-  select(c(gene_ids, gene_symbol))
-nrow(gene_meta[keygenes,]) == length(keygenes)
+# keygenes <- unique(unlist(gs_list))
+# gene_meta <- obj@assays[["RNA"]]@meta.data %>%
+#   select(c(gene_ids, gene_symbol))
+# nrow(gene_meta[keygenes,]) == length(keygenes)
 
 # extract scaled scRNA-seq matrix
 scRNAseqData_scaled <- obj@assays[["RNA"]]$scale.data %>% as.matrix()
 
 ########### run ScType code ########### 
-es.max <- sctype_score(scRNAseqData = scRNAseqData_scaled, scaled = TRUE, gs = gs_list$gs_positive, gs2 = gs_list$gs_negative)
+es.max <- sctype_score(scRNAseqData = scRNAseqData_scaled, scaled = TRUE, gs = gs_list)
 
 # NOTE: scRNAseqData parameter should correspond to your input scRNA-seq matrix. For raw (unscaled) count matrix set scaled = FALSE
 # When using Seurat, we use "RNA" slot with 'scale.data' by default. Please change "RNA" to "SCT" for sctransform-normalized data,
 # or to "integrated" for joint dataset analysis. To apply sctype with unscaled data, use e.g. pbmc[["RNA"]]$counts or pbmc[["RNA"]]@counts, with scaled set to FALSE.
 
 # merge by cluster
-Seurat::DimPlot(obj, reduction = "umap", group.by = "seurat_clusters")
+#Seurat::DimPlot(obj, reduction = "umap", group.by = "seurat_clusters")
 cL_resutls <- do.call("rbind", lapply(unique(obj@meta.data$seurat_clusters), function(cl){
   es.max.cl = sort(rowSums(es.max[ ,rownames(obj@meta.data[obj@meta.data$seurat_clusters==cl, ])]), decreasing = !0)
   head(data.frame(cluster = cl, type = names(es.max.cl), scores = es.max.cl, ncells = sum(obj@meta.data$seurat_clusters==cl)), 10)
@@ -74,7 +86,7 @@ ggarrange(p1, p2, ncol = 2)
 #   guides(color = guide_legend(ncol=1, override.aes = list(size = 3)))
 
 ## dot plot of marker genes
-markers <- gs_list$gs_positive[unique(sctype_scores$type)]
+markers <- gs_list[unique(sctype_scores$type)]
 DotPlot(annoobj, features = markers, group.by = "scType", cols = c("blue", "red")) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
 

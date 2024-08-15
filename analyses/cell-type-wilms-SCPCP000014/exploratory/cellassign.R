@@ -28,13 +28,11 @@ tissue <- "Kidney" # e.g. Immune system,Pancreas,Liver,Eye,Kidney,Brain,Lung,Adr
 # prepare gene sets
 gs_list <- gene_sets_prepare(db_, tissue)
 gs_list$gs_positive[[2]]
-# # subset marker genes
-# p1 <- Seurat::DimPlot(obj, reduction = "umap", group.by = "seurat_clusters", label = T)
-# p2 <- DotPlot(obj, features = gs_list$gs_positive[[2]], group.by = "seurat_clusters", cols = c("blue", "red")) +
-#   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
-# ggpubr::ggarrange(p1, p2, ncol = 2)
-
 marker_mat <- marker_list_to_mat(gs_list$gs_positive)
+
+##### prepare markergenes from kidney atlas
+
+
 marker_mat <- marker_mat[rownames(marker_mat) %in% rownames(rds),]
 input_sce <- rds[rownames(rds) %in% rownames(marker_mat),]
 
@@ -59,14 +57,15 @@ pheatmap::pheatmap(cellprobs(fit))
 # add annotation
 annoobj <- obj
 annoobj@meta.data$cellassign <- factor(celltypes(fit))
-color <- Polychrome::glasbey.colors( length(unique(celltypes(fit))) )
+color <- Polychrome::glasbey.colors( length(unique(celltypes(fit))) +1  )
+color <- color[-1]
 names(color) <- unique(celltypes(fit))
+color['unassigned'] <- "gray90"
 
                        
-p1 <- Seurat::DimPlot(annoobj, reduction = "umap", group.by = "cellassign") + 
+p1 <- Seurat::DimPlot(annoobj, reduction = "umap", group.by = "cellassign", cols=color) + 
   theme(legend.position = "bottom") + 
-  guides(color = guide_legend(ncol=2, override.aes = list(size = 3))) +
-  scale_color_manual(values = color) 
+  guides(color = guide_legend(ncol=2, override.aes = list(size = 3))) 
 p2 <- Seurat::DimPlot(annoobj, reduction = "umap", group.by = "seurat_clusters") + 
   theme(legend.position = "bottom")
-ggarrange(p1, p2, ncol = 2)
+ggpubr::ggarrange(p1, p2, ncol = 2)

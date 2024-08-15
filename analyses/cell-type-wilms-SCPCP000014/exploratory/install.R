@@ -45,3 +45,6 @@ tensorflow::tf_config()
 reticulate::py_config()
 devtools::install_github("JingxuanChen7/cellassign")
 # pip install tf-keras
+
+
+devtools::install_github('immunogenomics/presto')
