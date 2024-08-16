@@ -20,7 +20,6 @@ coldata <- read.table(path_supp_mtx_col, header = T) %>%
 rowdata <- read.table(path_supp_mtx_row, header = T)
 
 
-
 sce <- SummarizedExperiment::SummarizedExperiment(assays = S4Vectors::SimpleList(counts = supp_mtx), 
                                                   colData = coldata,
                                                   rowData = rowdata)
@@ -28,6 +27,13 @@ sce <- SummarizedExperiment::SummarizedExperiment(assays = S4Vectors::SimpleList
 sce <- sce[, sce$QCpass == "TRUE"]
 sce <- sce[, !is.na(sce$Cell_type1)]
 sce <- sce[, !is.na(sce$Category)]
+sce <- as(sce, "SingleCellExperiment")
+######## convert ensembl IDs to symbols and dedup
+rownames(sce) <- sce@rowRanges@elementMetadata@listData[["Symbol"]]
+sce <- singleCellTK::dedupRowNames(sce, as.rowData = F, return.list = F)
+sce <- sce[!is.na(rownames(sce)),]
+sce <- sce[!duplicated(rownames(sce)),]
+
 readr::write_rds(sce, paste0(path_ref, "/aat1699-young.rds"))
 
 
