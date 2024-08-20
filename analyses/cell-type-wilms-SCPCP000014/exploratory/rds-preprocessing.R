@@ -32,9 +32,10 @@ seurat_obj@misc <- S4Vectors::metadata(rds)
 obj <- seurat_obj
 
 ######## Normalize, scale, feature selection
-obj <- Seurat::NormalizeData(obj, normalization.method = "LogNormalize")
-obj <- Seurat::FindVariableFeatures(obj, selection.method = "vst", nfeatures = 2000)
-obj <- Seurat::ScaleData(obj, features = Seurat::VariableFeatures(object = obj))
+# obj <- Seurat::NormalizeData(obj, normalization.method = "LogNormalize")
+# obj <- Seurat::FindVariableFeatures(obj, selection.method = "vst", nfeatures = 2000)
+#obj <- Seurat::ScaleData(obj, features = Seurat::VariableFeatures(object = obj))
+obj <- Seurat::SCTransform(obj)
 obj <- Seurat::RunPCA(obj, features = Seurat::VariableFeatures(object = obj))
 
 # Seurat::ElbowPlot(obj, ndims = 50)
@@ -50,3 +51,28 @@ obj <- Seurat::RunTSNE(obj, dims = 1:ndims)
 Seurat::DimPlot(obj, reduction = "tsne")
 
 SeuratObject::SaveSeuratRds(obj, file = paste0("results/",sample,".h5Seurat"))
+
+
+######## atlas
+path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"
+sce <- zellkonverter::readH5AD(paste0(path_ref, "/Fetal_full_v3.h5ad"))
+seurat_obj <- SeuratObject::CreateSeuratObject(counts = SingleCellExperiment::counts(sce),
+                                               assay = "RNA",
+                                               project = "kidneyatlas")
+# convert colData and rowData to data.frame for use in the Seurat object
+cell_metadata <- as.data.frame(SingleCellExperiment::colData(sce))
+row_metadata <- as.data.frame(SingleCellExperiment::rowData(sce))
+# add cell metadata (colData) from SingleCellExperiment to Seurat
+seurat_obj@meta.data <- cell_metadata
+# add row metadata (rowData) from SingleCellExperiment to Seurat
+seurat_obj[["RNA"]]@meta.data <- row_metadata
+# add metadata from SingleCellExperiment to Seurat
+seurat_obj@misc <- S4Vectors::metadata(sce)
+# make a copy for processing
+obj <- seurat_obj
+# log transform counts
+obj <- Seurat::NormalizeData(obj, normalization.method = "LogNormalize")
+obj <- Seurat::FindVariableFeatures(obj, selection.method = "vst", nfeatures = 2000)
+obj <- Seurat::ScaleData(obj, features = Seurat::VariableFeatures(object = obj))
+obj <- Seurat::RunPCA(obj, features = Seurat::VariableFeatures(object = obj))
+SeuratObject::SaveSeuratRds(obj, file = paste0("results/kidneyatlas.h5Seurat"))

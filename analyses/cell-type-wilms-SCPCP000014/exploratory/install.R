@@ -23,6 +23,7 @@ BiocManager::install("harmony")
 #sudo apt-get install -y libmagick++-dev
 BiocManager::install("SpatialExperiment")
 BiocManager::install("singleCellTK")
+BiocManager::install('glmGamPoi')
 
 install.packages("viridis")
 install.packages("pheatmap")

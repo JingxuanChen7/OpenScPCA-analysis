@@ -17,8 +17,10 @@ supp_mtx <- as(supp_mtx, "CsparseMatrix")
 coldata <- read.table(path_supp_mtx_col, header = T) %>% 
   left_join(cell_manifest, by = c("SangerID","DropletID","Barcode"="barcode")) %>%
   left_join(cluster_info, by = c("ClusterID" = "Cluster_ID"))
+rownames(coldata) <- coldata$DropletID
 rowdata <- read.table(path_supp_mtx_row, header = T)
-
+rownames(rowdata) <- rowdata$GeneLabel
+dimnames(supp_mtx) <- list(rowdata$GeneLabel, coldata$DropletID)
 
 sce <- SummarizedExperiment::SummarizedExperiment(assays = S4Vectors::SimpleList(counts = supp_mtx), 
                                                   colData = coldata,
