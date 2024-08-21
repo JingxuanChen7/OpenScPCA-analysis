@@ -1,5 +1,5 @@
 library(dplyr)
-
+library(Seurat)
 ####################### wilms tumor markers - Young et al. ####################### 
 path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"
 path_supp_table <- paste0(path_ref, "/aat1699-young-tabless1-s12-revision2.xlsx")
@@ -15,26 +15,26 @@ filter_markers <- left_join(markers, cluster_info, by = c("Cluster" = "Cluster_I
   filter(grepl("tumour", Category))
 
 ####################### kidney atlas ####################### 
-library(Seurat)
-path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"
-sce <- zellkonverter::readH5AD(paste0(path_ref, "/Fetal_full_v3.h5ad"))
-seurat_obj <- SeuratObject::CreateSeuratObject(counts = SingleCellExperiment::counts(sce),
-                                               assay = "RNA",
-                                               project = "kidneyatlas")
-# convert colData and rowData to data.frame for use in the Seurat object
-cell_metadata <- as.data.frame(SingleCellExperiment::colData(sce))
-row_metadata <- as.data.frame(SingleCellExperiment::rowData(sce))
-# add cell metadata (colData) from SingleCellExperiment to Seurat
-seurat_obj@meta.data <- cell_metadata
-# add row metadata (rowData) from SingleCellExperiment to Seurat
-seurat_obj[["RNA"]]@meta.data <- row_metadata
-# add metadata from SingleCellExperiment to Seurat
-seurat_obj@misc <- S4Vectors::metadata(sce)
-# make a copy for processing
-obj <- seurat_obj
-# log transform counts
-obj <- Seurat::NormalizeData(obj, normalization.method = "LogNormalize")
 
+path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"
+# sce <- zellkonverter::readH5AD(paste0(path_ref, "/Fetal_full_v3.h5ad"))
+# seurat_obj <- SeuratObject::CreateSeuratObject(counts = SingleCellExperiment::counts(sce),
+#                                                assay = "RNA",
+#                                                project = "kidneyatlas")
+# # convert colData and rowData to data.frame for use in the Seurat object
+# cell_metadata <- as.data.frame(SingleCellExperiment::colData(sce))
+# row_metadata <- as.data.frame(SingleCellExperiment::rowData(sce))
+# # add cell metadata (colData) from SingleCellExperiment to Seurat
+# seurat_obj@meta.data <- cell_metadata
+# # add row metadata (rowData) from SingleCellExperiment to Seurat
+# seurat_obj[["RNA"]]@meta.data <- row_metadata
+# # add metadata from SingleCellExperiment to Seurat
+# seurat_obj@misc <- S4Vectors::metadata(sce)
+# # make a copy for processing
+# obj <- seurat_obj
+# # log transform counts
+# obj <- Seurat::NormalizeData(obj, normalization.method = "LogNormalize")
+obj <- SeuratObject::LoadSeuratRds(paste0("results/kidneyatlas.h5Seurat"))
 # calculate marker genes for compartments
 Idents(obj) <- obj@meta.data[["compartment"]]
 markers_all <- FindAllMarkers(object = obj, 

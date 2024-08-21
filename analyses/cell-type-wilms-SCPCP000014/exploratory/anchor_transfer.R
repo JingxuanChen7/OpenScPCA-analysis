@@ -1,29 +1,9 @@
 library(Seurat)
 library(dplyr)
+library(ggpubr)
 
-# ######## atlas
-# path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"
-# sce <- zellkonverter::readH5AD(paste0(path_ref, "/Fetal_full_v3.h5ad"))
-# seurat_obj <- SeuratObject::CreateSeuratObject(counts = SingleCellExperiment::counts(sce),
-#                                                assay = "RNA",
-#                                                project = "kidneyatlas")
-# # convert colData and rowData to data.frame for use in the Seurat object
-# cell_metadata <- as.data.frame(SingleCellExperiment::colData(sce))
-# row_metadata <- as.data.frame(SingleCellExperiment::rowData(sce))
-# # add cell metadata (colData) from SingleCellExperiment to Seurat
-# seurat_obj@meta.data <- cell_metadata
-# # add row metadata (rowData) from SingleCellExperiment to Seurat
-# seurat_obj[["RNA"]]@meta.data <- row_metadata
-# # add metadata from SingleCellExperiment to Seurat
-# seurat_obj@misc <- S4Vectors::metadata(sce)
-# # make a copy for processing
-# obj <- seurat_obj
-# # log transform counts
-# obj <- Seurat::NormalizeData(obj, normalization.method = "LogNormalize")
-# obj <- Seurat::FindVariableFeatures(obj, selection.method = "vst", nfeatures = 2000)
-# obj <- Seurat::ScaleData(obj, features = Seurat::VariableFeatures(object = obj))
-# obj <- Seurat::RunPCA(obj, features = Seurat::VariableFeatures(object = obj))
-# SeuratObject::SaveSeuratRds(obj, file = paste0("results/kidneyatlas.h5Seurat"))
+######## atlas
+
 obj <- SeuratObject::LoadSeuratRds(paste0("results/kidneyatlas.h5Seurat"))
 
 # ######### wilms tumor
@@ -87,6 +67,8 @@ anchors <- FindTransferAnchors(reference = obj, query = sample_obj)
 # clean annotation
 obj@meta.data <- obj@meta.data %>%
   mutate(annot = case_when(compartment == "stroma" ~ "stroma",
+                           compartment == "immune" ~ "immune",
+                           grepl("S shaped body", celltype) ~ "S shaped body",
                            TRUE ~ celltype))
 obj@meta.data$annot <- factor(obj@meta.data$annot)
 # transfer labels
@@ -94,6 +76,24 @@ predictions <- TransferData(
   anchorset = anchors,
   refdata = obj$annot
 )
+predictions <- mutate(predictions, predicted.id = case_when(prediction.score.max < 0.4 ~ "Unknown",
+                                                            TRUE ~ predicted.id))
 sample_obj <- AddMetaData(object = sample_obj, metadata = predictions)
-Seurat::DimPlot(sample_obj, reduction = "umap", group.by = "predicted.id", label = F)
-Seurat::DimPlot(sample_obj, reduction = "umap", label = T)
+
+# plot
+color <- Polychrome::glasbey.colors( length( unique(predictions$predicted.id) ) +1  )
+color <- color[-1]
+names(color) <- unique(predictions$predicted.id)
+color['Unknown'] <- "gray90"
+
+p1 <- Seurat::DimPlot(sample_obj, reduction = "umap", group.by = "predicted.id", label = F, cols = color)
+p2 <- Seurat::DimPlot(sample_obj, reduction = "umap", label = T)
+df <- sample_obj@meta.data %>%
+  dplyr::group_by(seurat_clusters, predicted.id) %>%
+  dplyr::count(name = "sum")
+p3 <- ggplot(df, aes(x = seurat_clusters, y = sum, fill =  predicted.id)) +
+  geom_bar(width = 0.5, stat = "identity", position = "fill") +
+  scale_fill_manual(values = color)
+
+toprow <- ggpubr::ggarrange(p1, p2, widths = c(1.5,1))
+ggpubr::ggarrange(toprow, p3, ncol = 1)
