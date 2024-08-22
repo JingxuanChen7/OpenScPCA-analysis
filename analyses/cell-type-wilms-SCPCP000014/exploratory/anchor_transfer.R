@@ -4,7 +4,7 @@ library(ggpubr)
 
 ######## atlas
 
-obj <- SeuratObject::LoadSeuratRds(paste0("results/kidneyatlas.h5Seurat"))
+ref_obj <- SeuratObject::LoadSeuratRds(paste0("results/kidneyatlas.h5Seurat"))
 
 # ######### wilms tumor
 # path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"
@@ -41,7 +41,7 @@ obj <- SeuratObject::LoadSeuratRds(paste0("results/kidneyatlas.h5Seurat"))
 # # Seurat::DimPlot(wilms_obj, reduction = "umap")
 
 
-######### dataset
+######### dataset per sample ######### 
 
 path_proj <- "/home/lightsail-user/wilms_tumor/OpenScPCA-analysis/data/current/SCPCP000014"
 
@@ -97,3 +97,60 @@ p3 <- ggplot(df, aes(x = seurat_clusters, y = sum, fill =  predicted.id)) +
 
 toprow <- ggpubr::ggarrange(p1, p2, widths = c(1.5,1))
 ggpubr::ggarrange(toprow, p3, ncol = 1)
+
+
+######### dataset merged ######### 
+
+path_proj <- "/home/lightsail-user/wilms_tumor/OpenScPCA-analysis/data/current/SCPCP000014"
+
+sample_obj <- SeuratObject::LoadSeuratRds(paste0("results/SCPCP000014_merged.h5Seurat"))
+
+sample_obj <- obj_3000
+
+# find anchors
+anchors <- FindTransferAnchors(reference = ref_obj, query = sample_obj)
+
+# clean annotation
+ref_obj@meta.data <- ref_obj@meta.data %>%
+  mutate(annot = case_when(compartment == "stroma" ~ "stroma",
+                           compartment == "immune" ~ "immune",
+                           #grepl("S shaped body", celltype) ~ "S shaped body",
+                           TRUE ~ celltype))
+ref_obj@meta.data$annot <- factor(ref_obj@meta.data$annot)
+# transfer labels
+predictions <- TransferData(
+  anchorset = anchors,
+  refdata = ref_obj$annot
+)
+predictions <- mutate(predictions, predicted.id = case_when(prediction.score.max < 0.5 ~ "Unknown",
+                                                            TRUE ~ predicted.id))
+sample_obj <- AddMetaData(object = sample_obj, metadata = predictions)
+
+# plot
+color <- Polychrome::glasbey.colors( length( unique(predictions$predicted.id) ) +1  )
+color <- color[-1]
+names(color) <- unique(predictions$predicted.id)
+color['Unknown'] <- "gray90"
+
+p1 <- Seurat::DimPlot(sample_obj, reduction = "umap", group.by = "predicted.id", 
+                label = F, cols = color, alpha = 0.1)
+Seurat::DimPlot(sample_obj, reduction = "umap", group.by = "predicted.id", 
+                      label = F, cols = color, ncol = 3, alpha = 0.1, split.by = "predicted.id")
+Seurat::DimPlot(sample_obj, reduction = "umap", group.by = "predicted.id", 
+                label = F, cols = color, ncol = 3, alpha = 0.1, split.by = "library_id")
+#Seurat::FeaturePlot(sample_obj, reduction = "umap", features = "prediction.score.max", cols = c("blue","red"))
+p2 <- Seurat::DimPlot(sample_obj, reduction = "umap", label = T)
+df <- sample_obj@meta.data %>%
+  dplyr::group_by(seurat_clusters, predicted.id) %>%
+  dplyr::count(name = "sum")
+p3 <- ggplot(df, aes(x = seurat_clusters, y = sum, fill =  predicted.id)) +
+  geom_bar(width = 0.5, stat = "identity", position = "fill") +
+  scale_fill_manual(values = color)
+
+toprow <- ggpubr::ggarrange(p1, p2, widths = c(1.5,1))
+ggpubr::ggarrange(toprow, p3, ncol = 1)
+
+var_genes <- VariableFeatures(sample_obj)
+Seurat::FeaturePlot(sample_obj, features = c("WT1","PAX2","BMP7","HOXA11"))
+
+
