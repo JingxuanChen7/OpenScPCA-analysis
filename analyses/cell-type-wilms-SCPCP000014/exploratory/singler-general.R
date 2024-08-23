@@ -1,4 +1,5 @@
 library(dplyr)
+library(Seurat)
 
 path_proj <- "/home/lightsail-user/wilms_tumor/OpenScPCA-analysis/data/current/SCPCP000014"
 path_meta <- paste0(path_proj,"/single_cell_metadata.tsv")
@@ -136,3 +137,43 @@ common_genes <- intersect(rownames(rds),rownames(sce))
 rds <- rds[common_genes,]
 sce <- sce[common_genes,]
 ref_sample_combine <- SingleCellExperiment::cbind(sce, rds)
+
+
+######## singleR - kidney atlas - merged corrected dataset ######## 
+ref_obj <- SeuratObject::LoadSeuratRds(paste0("results/kidneyatlas.h5Seurat"))
+ref_obj@meta.data <- ref_obj@meta.data %>%
+  mutate(annot = case_when(compartment == "stroma" ~ "stroma",
+                           compartment == "immune" ~ "immune",
+                           #grepl("S shaped body", celltype) ~ "S shaped body",
+                           TRUE ~ celltype))
+sce <- as.SingleCellExperiment(ref_obj)
+rm(ref_obj)
+
+sample_obj <- SeuratObject::LoadSeuratRds(paste0("results/SCPCP000014_merged.h5Seurat"))
+count_mat <- SeuratObject::GetAssayData(sample_obj, assay = "RNA", layer = "data")
+rm(sample_obj)
+# run singleR
+pred.obj <- SingleR::SingleR(test = count_mat, # normalized count_mat
+                             ref = sce, 
+                             assay.type.test=1,
+                             labels = sce$annot,
+                             num.threads = 6)
+
+SingleR::plotScoreHeatmap(pred.obj)
+SingleR::plotDeltaDistribution(pred.obj, ncol = 3)
+singler_out <- pred.obj$labels
+names(singler_out) <- rownames(pred.obj)
+sample_obj@meta.data$singler <- singler_out
+Seurat::DimPlot(sample_obj, reduction = "umap", group.by = "singler")
+SeuratObject::SaveSeuratRds(sample_obj, file = paste0("results/SCPCP000014_merged_singler.h5Seurat"))
+
+pred.obj
+# plot
+color <- Polychrome::glasbey.colors( length( unique(sample_obj@meta.data$singler) ) +1  )
+color <- color[-1]
+names(color) <- unique(sample_obj@meta.data$singler)
+color['Unknown'] <- "gray90"
+
+Seurat::DimPlot(sample_obj, reduction = "umap", group.by = "singler", cols = color,
+                split.by = "singler", ncol = 3, alpha = 0.1)
+rm(sample_obj)

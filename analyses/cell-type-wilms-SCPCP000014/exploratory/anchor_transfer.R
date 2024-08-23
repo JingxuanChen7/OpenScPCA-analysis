@@ -105,7 +105,6 @@ path_proj <- "/home/lightsail-user/wilms_tumor/OpenScPCA-analysis/data/current/S
 
 sample_obj <- SeuratObject::LoadSeuratRds(paste0("results/SCPCP000014_merged.h5Seurat"))
 
-sample_obj <- obj_3000
 
 # find anchors
 anchors <- FindTransferAnchors(reference = ref_obj, query = sample_obj)
