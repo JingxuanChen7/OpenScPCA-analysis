@@ -62,21 +62,21 @@ sample_obj <- SeuratObject::LoadSeuratRds(paste0("results/",sample,".h5Seurat"))
 
 
 # find anchors
-anchors <- FindTransferAnchors(reference = obj, query = sample_obj)
+anchors <- FindTransferAnchors(reference = ref_obj, query = sample_obj)
 
 # clean annotation
-obj@meta.data <- obj@meta.data %>%
+ref_obj@meta.data <- ref_obj@meta.data %>%
   mutate(annot = case_when(compartment == "stroma" ~ "stroma",
                            compartment == "immune" ~ "immune",
-                           grepl("S shaped body", celltype) ~ "S shaped body",
+                           # grepl("S shaped body", celltype) ~ "S shaped body",
                            TRUE ~ celltype))
-obj@meta.data$annot <- factor(obj@meta.data$annot)
+ref_obj@meta.data$annot <- factor(ref_obj@meta.data$annot)
 # transfer labels
 predictions <- TransferData(
   anchorset = anchors,
-  refdata = obj$annot
+  refdata = ref_obj$annot
 )
-predictions <- mutate(predictions, predicted.id = case_when(prediction.score.max < 0.4 ~ "Unknown",
+predictions <- mutate(predictions, predicted.id = case_when(prediction.score.max < 0.5 ~ "Unknown",
                                                             TRUE ~ predicted.id))
 sample_obj <- AddMetaData(object = sample_obj, metadata = predictions)
 
@@ -97,7 +97,8 @@ p3 <- ggplot(df, aes(x = seurat_clusters, y = sum, fill =  predicted.id)) +
 
 toprow <- ggpubr::ggarrange(p1, p2, widths = c(1.5,1))
 ggpubr::ggarrange(toprow, p3, ncol = 1)
-
+Seurat::DimPlot(sample_obj, reduction = "umap", group.by = "predicted.id", 
+                label = F, cols = color, split.by = "predicted.id", ncol = 3, alpha = 0.1)
 
 ######### dataset merged ######### 
 

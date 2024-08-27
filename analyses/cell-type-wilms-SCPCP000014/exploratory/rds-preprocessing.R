@@ -1,5 +1,5 @@
 library(dplyr)
-
+library(Seurat)
 path_proj <- "/home/lightsail-user/wilms_tumor/OpenScPCA-analysis/data/current/SCPCP000014"
 path_meta <- paste0(path_proj,"/single_cell_metadata.tsv")
 meta <- read.table(path_meta, sep = "\t", header = T, stringsAsFactors = F)
@@ -35,30 +35,15 @@ seurat_obj@meta.data <- cell_metadata
 seurat_obj[["RNA"]]@meta.data <- row_metadata
 # add metadata from SingleCellExperiment to Seurat
 seurat_obj@misc <- S4Vectors::metadata(rds)
-# make a copy for processing
-obj <- seurat_obj
 
-######## Normalize, scale, feature selection
-obj <- Seurat::NormalizeData(obj, normalization.method = "LogNormalize")
-obj <- Seurat::FindVariableFeatures(obj, selection.method = "vst", nfeatures = 2000)
+source(file = "exploratory/functions.R")
+seurat_obj <- pre_seuratobj(seurat_obj, nfeatures = 3000, run_harmony = F, reduction = "pca")
 
-obj <- Seurat::ScaleData(obj, features = Seurat::VariableFeatures(object = obj))
-# obj <- Seurat::SCTransform(obj)
-obj <- Seurat::RunPCA(obj, features = Seurat::VariableFeatures(object = obj))
+Seurat::DimPlot(seurat_obj, reduction = "umap", label = T)
+# obj <- Seurat::RunTSNE(obj, dims = 1:ndims)
+# Seurat::DimPlot(obj, reduction = "tsne")
 
-# Seurat::ElbowPlot(obj, ndims = 50)
-
-######## Clustering and dimentional reduction
-ndims <- 50
-obj <- Seurat::FindNeighbors(obj, dims = 1:ndims)
-obj <- Seurat::FindClusters(obj, resolution = 0.8, algorithm = 1)
-
-obj <- Seurat::RunUMAP(obj, dims = 1:ndims)
-Seurat::DimPlot(obj, reduction = "umap")
-obj <- Seurat::RunTSNE(obj, dims = 1:ndims)
-Seurat::DimPlot(obj, reduction = "tsne")
-
-SeuratObject::SaveSeuratRds(obj, file = paste0("results/",sample,".h5Seurat"))
+SeuratObject::SaveSeuratRds(seurat_obj, file = paste0("results/",sample,".h5Seurat"))
 
 ########### merged rds preprocessing ##########
 
