@@ -150,7 +150,17 @@ p3 <- ggplot(df, aes(x = seurat_clusters, y = sum, fill =  predicted.id)) +
 toprow <- ggpubr::ggarrange(p1, p2, widths = c(1.5,1))
 ggpubr::ggarrange(toprow, p3, ncol = 1)
 
-var_genes <- VariableFeatures(sample_obj)
-Seurat::FeaturePlot(sample_obj, features = c("WT1","PAX2","BMP7","HOXA11"))
+Seurat::DimPlot(sample_obj, reduction = "umap", label = F)
+# var_genes <- VariableFeatures(sample_obj)
+var_genes <- list(
+  list("PECAM1","PLVAP","TIMP3"),
+  list("SIX1","CITED1","PAX2","ALDOB","GLYAT","GPX3","SLC12A1","CLCNKA","ATP6V1B1","KRT7","S100P","UPK1A"),
+  list("PTPRC","NKG7","CD3D","MS4A1","CD14","FCGR3A","CPA3","TPSAB1","ITGB3","GP6","HBM","HBZ"),
+  list("LUM","PDGFRB","PRELP","TNC"),
+  list("WT1","CA9")
+)
+var_genes <- setNames(object = var_genes, c("Vasc","DevNephron","Immune","Stroma","Tumor"))
+Seurat::DotPlot(sample_obj, features = var_genes, cols = c("white","red")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
