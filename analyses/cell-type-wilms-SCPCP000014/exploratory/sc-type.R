@@ -35,21 +35,21 @@ markers <- markers_file %>%
 gs_list <- by(markers$gene, markers$cluster, head, n=10)
 
 
-# remove genes that not present in object and duplicate hits
-dupgenes <- unique(unlist(gs_list)[duplicated(unlist(gs_list))])
-availgenes <- annoobj@assays[["SCT"]]@data@Dimnames[[1]]
-for (i in 1:length(gs_list)) {
-  #name <- names(gs_list[i])
-  element <- gs_list[[i]][gs_list[[i]] %in% availgenes]
-  element <- element[!element %in% dupgenes]
-  gs_list[[i]] <- element
-  #names(gs_list[i]) <- name
-}
+# # remove genes that not present in object and duplicate hits
+# dupgenes <- unique(unlist(gs_list)[duplicated(unlist(gs_list))])
+# availgenes <- annoobj@assays[["SCT"]]@data@Dimnames[[1]]
+# for (i in 1:length(gs_list)) {
+#   #name <- names(gs_list[i])
+#   element <- gs_list[[i]][gs_list[[i]] %in% availgenes]
+#   element <- element[!element %in% dupgenes]
+#   gs_list[[i]] <- element
+#   #names(gs_list[i]) <- name
+# }
 
 
 
 # extract scaled scRNA-seq matrix
-scRNAseqData_scaled <- obj@assays[["SCT"]]$scale.data %>% as.matrix()
+scRNAseqData_scaled <- obj@assays[["RNA"]]$scale.data %>% as.matrix()
 
 ########### run ScType code ########### 
 es.max <- sctype_score(scRNAseqData = scRNAseqData_scaled, scaled = TRUE, gs = gs_list)
@@ -94,10 +94,28 @@ ggarrange(p1, p2, ncol = 2)
 #   theme(legend.position = "right") +
 #   guides(color = guide_legend(ncol=1, override.aes = list(size = 3)))
 
-## dot plot of marker genes
+######### dot plot of marker genes ######### 
 markers <- gs_list[unique(sctype_scores$type)]
-DotPlot(annoobj, features = markers, group.by = "scType", cols = c("blue", "red")) +
+DotPlot(annoobj, features = markers, group.by = "scType", cols = c("white", "red")) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
 
+var_genes <- list(
+  list("PECAM1","PLVAP","TIMP3"),
+  list("SIX1","CITED1","PAX2","ALDOB","GLYAT","GPX3","SLC12A1","CLCNKA","ATP6V1B1","KRT7","S100P","UPK1A"),
+  list("PTPRC","NKG7","CD3D","MS4A1","CD14","FCGR3A","CPA3","TPSAB1","ITGB3","GP6","HBM","HBZ"),
+  list("LUM","PDGFRB","PRELP","TNC"),
+  list("WT1","CTNNB1","AMER1","IGF2","NCAM1")
+)
+var_genes <- setNames(object = var_genes, c("Vasc","DevNephron","Immune","Stroma","Tumor"))
+Seurat::DotPlot(annoobj, features = var_genes, group.by = "scType", cols = c("white","red")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-
+markers_file <- read.csv(paste0("./results/aat1699-young_wilms_degenes_tumor.csv"))
+markers <- markers_file %>%
+  filter(p_val_adj < 0.05 & pct.1 > 0.5 ) %>%
+  arrange(desc(avg_log2FC))
+markers <- head(markers$X, 10)
+DimPlot(annoobj, reduction = "umap", group.by = "scType", label = T)
+DotPlot(annoobj, features = markers, group.by = "scType", cols = c("gray", "red")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+FeaturePlot(annoobj, features = markers)

@@ -1,5 +1,6 @@
 library(dplyr)
 library(Seurat)
+library(SingleCellExperiment)
 ####################### wilms tumor markers - Young et al. ####################### 
 path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"
 path_supp_table <- paste0(path_ref, "/aat1699-young-tabless1-s12-revision2.xlsx")
@@ -12,8 +13,9 @@ cluster_info <- readxl::read_xlsx(path_supp_table, sheet = 2, skip = 1) %>%
 
 filter_markers <- left_join(markers, cluster_info, by = c("Cluster" = "Cluster_ID") ) %>%
   filter(!is.na(Category) & !is.na(Cell_type1)) %>%
-  filter(grepl("tumour", Category))
+  filter(grepl("Wilms_tumour",Cell_type1))
 
+unique(filter_markers$Symbol)
 ####################### kidney atlas ####################### 
 
 path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"

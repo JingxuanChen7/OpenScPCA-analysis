@@ -1,5 +1,8 @@
 library(dplyr)
+library(Seurat)
+library(SingleCellExperiment)
 
+######## sce object preparation ######## 
 path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"
 path_supp_table <- paste0(path_ref, "/aat1699-young-tabless1-s12-revision2.xlsx")
 cell_manifest <- readxl::read_xlsx(path_supp_table, sheet = 11, skip = 1) %>%
@@ -38,8 +41,40 @@ sce <- sce[!duplicated(rownames(sce)),]
 
 readr::write_rds(sce, paste0(path_ref, "/aat1699-young.rds"))
 
-
-########################################################################
+######## create seurat obj for wilms ######## 
 path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"
-sce <- zellkonverter::readH5AD(paste0(path_ref, "/Fetal_full_v3.h5ad"))
+
+obj <- readr::read_rds( paste0(path_ref, "/aat1699-young.rds"))
+seurat_obj <- SeuratObject::CreateSeuratObject(counts = SingleCellExperiment::counts(obj),
+                                               assay = "RNA",
+                                               project = "aat1699-young")
+# convert colData and rowData to data.frame for use in the Seurat object
+cell_metadata <- as.data.frame(SingleCellExperiment::colData(obj))
+row_metadata <- as.data.frame(SingleCellExperiment::rowData(obj))
+# add cell metadata (colData) from SingleCellExperiment to Seurat
+seurat_obj@meta.data <- cell_metadata
+# add row metadata (rowData) from SingleCellExperiment to Seurat
+seurat_obj[["RNA"]]@meta.data <- row_metadata
+# add metadata from SingleCellExperiment to Seurat
+seurat_obj@misc <- S4Vectors::metadata(obj)
+obj <- seurat_obj[,grepl("Wilms",seurat_obj$Source)]
+obj <- Seurat::NormalizeData(obj, normalization.method = "LogNormalize")
+obj <- Seurat::FindVariableFeatures(obj, selection.method = "vst", nfeatures = 2000)
+obj <- Seurat::ScaleData(obj, features = Seurat::VariableFeatures(object = obj))
+obj <- Seurat::RunPCA(obj, features = Seurat::VariableFeatures(object = obj))
+
+SeuratObject::SaveSeuratRds(obj, file = paste0("results/aat1699-young_wilms.h5Seurat"))
+
+######## marker gene ######## 
+obj <- SeuratObject::LoadSeuratRds(paste0("results/aat1699-young_wilms.h5Seurat"))
+
+coldata <- obj@meta.data %>% as.data.frame()
+# calculate marker genes for compartments
+Idents(obj) <- obj@meta.data[["Category"]]
+markers_all <- FindMarkers(object = obj, 
+                           only.pos = TRUE,
+                           assay = "RNA",
+                           ident.1 = c("Kidney_tumour","Kidney_tumour_immune"),
+                           logfc.threshold = 0.25) 
+write.csv(markers_all, file = paste0("./results/aat1699-young_wilms_degenes_tumor.csv"))
 

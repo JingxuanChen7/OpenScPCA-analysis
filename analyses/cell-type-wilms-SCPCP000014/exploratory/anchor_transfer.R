@@ -157,9 +157,10 @@ var_genes <- list(
   list("SIX1","CITED1","PAX2","ALDOB","GLYAT","GPX3","SLC12A1","CLCNKA","ATP6V1B1","KRT7","S100P","UPK1A"),
   list("PTPRC","NKG7","CD3D","MS4A1","CD14","FCGR3A","CPA3","TPSAB1","ITGB3","GP6","HBM","HBZ"),
   list("LUM","PDGFRB","PRELP","TNC"),
-  list("WT1","CA9")
+  list("WT1","CTNNB1","AMER1","IGF2","NCAM1")
 )
 var_genes <- setNames(object = var_genes, c("Vasc","DevNephron","Immune","Stroma","Tumor"))
+Seurat::DimPlot(sample_obj, reduction = "umap", label = T)
 Seurat::DotPlot(sample_obj, features = var_genes, cols = c("white","red")) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
