@@ -34,6 +34,8 @@ markers <- markers_file %>%
   filter(p_val_adj < 0.05 & pct.1 > 0.5 & pct.2 < 0.1 )
 gs_list <- by(markers$gene, markers$cluster, head, n=10)
 
+###### maker genes curated by cellMarker
+gs_list <- by(markers$marker, markers$cell_name, head, n=10)
 
 # # remove genes that not present in object and duplicate hits
 # dupgenes <- unique(unlist(gs_list)[duplicated(unlist(gs_list))])

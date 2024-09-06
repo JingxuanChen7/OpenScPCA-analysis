@@ -49,3 +49,5 @@ devtools::install_github("JingxuanChen7/cellassign")
 
 
 devtools::install_github('immunogenomics/presto')
+
+devtools::install_github("wjawaid/enrichR")

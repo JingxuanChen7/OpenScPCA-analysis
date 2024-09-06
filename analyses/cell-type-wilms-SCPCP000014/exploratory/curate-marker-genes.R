@@ -50,6 +50,14 @@ markers_celltype <- FindAllMarkers(object = obj,
                               logfc.threshold = 0.25) 
 write.csv(markers_celltype, file = paste0("./results/degenes_celltype.csv"))
 
+####################### cell markers ####################### 
+# get human marker list from http://bio-bigdata.hrbmu.edu.cn/CellMarker/CellMarker_download.html
+path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"
+path_supp_table <- paste0(path_ref, "/Cell_marker_Human.xlsx")
+markers <- readxl::read_xlsx(path_supp_table) %>%
+  filter(tissue_class == "Kidney")
+  
+
 ####################### manual gene collection ####################### 
 stroma <- c("COL1A2","COL6A3","PDGFRA")
 Seurat::FeaturePlot(annoobj, features = stroma)

@@ -19,3 +19,15 @@ pre_seuratobj <- function(obj, nfeatures = 500, run_harmony = TRUE, reduction = 
   
   return(obj)
 }
+
+## remove duplicated genes in the list for dot plot
+clean_gslist <- function(inlist, obj){
+  dupgenes <- unique(unlist(inlist)[duplicated(unlist(inlist))])
+  availgenes <- rownames(obj)
+  for (i in 1:length(inlist)) {
+    element <- inlist[[i]][inlist[[i]] %in% availgenes]
+    element <- element[!element %in% dupgenes]
+    inlist[[i]] <- element
+  }
+  return(inlist)
+}
