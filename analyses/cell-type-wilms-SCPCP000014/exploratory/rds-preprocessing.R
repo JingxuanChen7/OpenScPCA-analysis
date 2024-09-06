@@ -44,6 +44,8 @@ Seurat::DimPlot(seurat_obj, reduction = "umap", label = T)
 # Seurat::DimPlot(obj, reduction = "tsne")
 
 SeuratObject::SaveSeuratRds(seurat_obj, file = paste0("results/",sample,".h5Seurat"))
+seurat_obj[["RNA"]] <- as(object = seurat_obj[["RNA"]], Class = "Assay")
+SeuratDisk::SaveH5Seurat(seurat_obj, file = paste0("results/",sample,".h5seurat") )
 
 ########### merged rds preprocessing ##########
 
@@ -99,6 +101,9 @@ Seurat::DimPlot(obj_3000, reduction = "umap", group.by = "library_id", split.by=
 # Seurat::DimPlot(obj, reduction = "tsne")
 
 SeuratObject::SaveSeuratRds(obj_3000, file = paste0("results/SCPCP000014_merged.h5Seurat"))
+obj <- SeuratObject::LoadSeuratRds(paste0("results/SCPCP000014_merged.h5Seurat"))
+obj[["RNA"]] <- as(object = obj[["RNA"]], Class = "Assay")
+SeuratDisk::SaveH5Seurat(obj, file = paste0("results/SCPCP000014_merged.h5seurat") )
 
 ########### merged by patient (one tumor + one PDX) ##########
 sample_obj <- SeuratObject::LoadSeuratRds(paste0("results/SCPCP000014_merged.h5Seurat"))

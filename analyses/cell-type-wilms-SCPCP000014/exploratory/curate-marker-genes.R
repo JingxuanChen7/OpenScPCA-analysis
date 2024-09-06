@@ -59,7 +59,33 @@ markers <- readxl::read_xlsx(path_supp_table) %>%
   
 
 ####################### manual gene collection ####################### 
-stroma <- c("COL1A2","COL6A3","PDGFRA")
-Seurat::FeaturePlot(annoobj, features = stroma)
+path_proj <- "/home/lightsail-user/wilms_tumor/OpenScPCA-analysis/data/current/SCPCP000014"
+sample <- "SCPCS000517"; library <- "SCPCL000849"
+sample_obj <- SeuratObject::LoadSeuratRds(paste0("results/",sample,".h5Seurat"))
 
-Seurat::FeaturePlot(annoobj, features = c("REN"))
+# from azimuth sample-only
+var_genes <- list(
+  list("SLC8A1","NFIB","SLIT3","FOXO1","PCDH7"),
+  list("COL1A2","COL6A3","PDGFRA","ZEB2"),
+  list("PAPPA2","KCTD8","TMEM182","NRG3","CUX2"),
+  list("LSAMP","DCC"),
+  list("NAV3")
+)
+var_genes <- setNames(object = var_genes, c("CNT","FIB","MD","MFIB","OMCD-PC"))
+# from merged cohort
+var_genes <- list(
+  list("MECOM","NFIA","FMN1","SLC26A7","PAX8"),
+  list("RBPMS","C7","ZFPM2-AS1","COL4A1","THBS1")
+
+)
+var_genes <- setNames(object = var_genes, c("CNT","FIB"))
+# from literature
+var_genes <- c("WT1", # well known
+               "BCL6", "CCNA1", "CTHRC1", "DGKD", "EPB41L4B", "ERRFI1", "LRRC40", "NCEH1", "NEBL", "PDSS1", "ROR1", "RTKN2", # 35480093
+               "TRIM28","FBXW7","NYNRIN","KDM3B", # 30885698
+               "EMCN", # "CCNA1" 38937666
+               "TCF3" # 34278464
+               )
+
+Seurat::DotPlot(sample_obj, features = var_genes, cols = c("blue","red")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
