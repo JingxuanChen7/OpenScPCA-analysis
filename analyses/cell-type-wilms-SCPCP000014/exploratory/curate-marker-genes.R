@@ -1,6 +1,6 @@
 library(dplyr)
 library(Seurat)
-library(SingleCellExperiment)
+library(ggpubr)
 ####################### wilms tumor markers - Young et al. ####################### 
 path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"
 path_supp_table <- paste0(path_ref, "/aat1699-young-tabless1-s12-revision2.xlsx")
@@ -72,20 +72,45 @@ var_genes <- list(
   list("NAV3")
 )
 var_genes <- setNames(object = var_genes, c("CNT","FIB","MD","MFIB","OMCD-PC"))
-# from merged cohort
-var_genes <- list(
-  list("MECOM","NFIA","FMN1","SLC26A7","PAX8"),
-  list("RBPMS","C7","ZFPM2-AS1","COL4A1","THBS1")
-
-)
-var_genes <- setNames(object = var_genes, c("CNT","FIB"))
+# # from merged cohort (not working)
+# var_genes <- list(
+#   list("MECOM","NFIA","FMN1","SLC26A7","PAX8"),
+#   list("RBPMS","C7","ZFPM2-AS1","COL4A1","THBS1")
+# 
+# )
+# var_genes <- setNames(object = var_genes, c("CNT","FIB"))
 # from literature
 var_genes <- c("WT1", # well known
                "BCL6", "CCNA1", "CTHRC1", "DGKD", "EPB41L4B", "ERRFI1", "LRRC40", "NCEH1", "NEBL", "PDSS1", "ROR1", "RTKN2", # 35480093
                "TRIM28","FBXW7","NYNRIN","KDM3B", # 30885698
                "EMCN", # "CCNA1" 38937666
-               "TCF3" # 34278464
+               "TCF3", # 34278464
+               "COL4A3","COL4A4","KCNJ1","MME","SLC12A1" # 33564352, low in tumor
                )
 
+var_genes <- c("PAX2","NCAM1","CALR","VIM","NEBL","ROR1")
 Seurat::DotPlot(sample_obj, features = var_genes, cols = c("blue","red")) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+# scaled_genes <- GetAssayData(sample_obj, slot = "scale.data") %>% rownames()
+# var_genes <- unlist(var_genes)[unlist(var_genes) %in% scaled_genes ]
+Seurat::DoHeatmap(sample_obj, features = var_genes, draw.lines = T ) 
+# # from cell marker
+# gs_list <- by(markers$Symbol, markers$cell_name, head, n=10) 
+# var_genes <-  unlist(var_genes)[unlist(var_genes) %in% scaled_genes ]
+
+# from science 2019 supp figure
+var_genes <- list(
+  list("PECAM1","PLVAP","TIMP3"),
+  list("SIX1","CITED1","PAX2","ALDOB","GLYAT","GPX3","SLC12A1","CLCNKA","ATP6V1B1","KRT7","S100P","UPK1A"),
+  list("PTPRC","NKG7","CD3D","MS4A1","CD14","FCGR3A","CPA3","TPSAB1","ITGB3","GP6","HBM","HBZ"),
+  list("LUM","PDGFRB","PRELP","TNC"),
+  list("WT1","CTNNB1","AMER1","IGF2","NCAM1")
+)
+var_genes <- setNames(object = var_genes, c("Vasc","DevNephron","Immune","Stroma","Tumor"))
+
+# from science 2018, findmarkers tumor genes
+markers <- read.csv(paste0("./results/aat1699-young_wilms_degenes_tumor.csv")) %>%
+  filter(avg_log2FC > 0.5 & p_val_adj < 0.05 & pct.1 > 0.4)
+var_genes <- markers$X
+
+
