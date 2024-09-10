@@ -39,13 +39,13 @@ seurat_obj@misc <- S4Vectors::metadata(rds)
 source(file = "exploratory/functions.R")
 seurat_obj <- pre_seuratobj(seurat_obj, nfeatures = 3000, run_harmony = F, reduction = "pca")
 
-Seurat::DimPlot(seurat_obj, reduction = "umap", label = T)
+# Seurat::DimPlot(seurat_obj, reduction = "umap", label = T)
 # obj <- Seurat::RunTSNE(obj, dims = 1:ndims)
 # Seurat::DimPlot(obj, reduction = "tsne")
 
 SeuratObject::SaveSeuratRds(seurat_obj, file = paste0("results/",sample,".h5Seurat"))
 seurat_obj[["RNA"]] <- as(object = seurat_obj[["RNA"]], Class = "Assay")
-SeuratDisk::SaveH5Seurat(seurat_obj, file = paste0("results/",sample,".h5seurat") )
+SeuratDisk::SaveH5Seurat(seurat_obj, file = paste0("results/",sample,".h5seurat"), overwrite = T )
 
 ########### merged rds preprocessing ##########
 
@@ -106,20 +106,20 @@ obj[["RNA"]] <- as(object = obj[["RNA"]], Class = "Assay")
 SeuratDisk::SaveH5Seurat(obj, file = paste0("results/SCPCP000014_merged.h5seurat") )
 
 ########### merged by patient (one tumor + one PDX) ##########
-sample_obj <- SeuratObject::LoadSeuratRds(paste0("results/SCPCP000014_merged.h5Seurat"))
-# Seurat::DimPlot(sample_obj, reduction = "umap", group.by = "library_id", split.by= "participant_id", ncol = 3)
-sample_obj <- sample_obj[,sample_obj$participant_id == "SJWLM046146" ]
-sample_obj <- Seurat::NormalizeData(sample_obj, normalization.method = "LogNormalize")
-sample_obj <- Seurat::FindVariableFeatures(sample_obj, selection.method = "vst", nfeatures = 2000)
-sample_obj <- Seurat::ScaleData(sample_obj, features = Seurat::VariableFeatures(object = sample_obj))
-# obj <- Seurat::SCTransform(obj)
-sample_obj <- Seurat::RunPCA(sample_obj, features = Seurat::VariableFeatures(object = sample_obj))
-sample_obj <- harmony::RunHarmony(sample_obj, group.by.vars = "library_id")
-ndims <- 50
-sample_obj <- Seurat::FindNeighbors(sample_obj, dims = 1:ndims, reduction = "harmony")
-sample_obj <- Seurat::FindClusters(sample_obj, resolution = 0.8, algorithm = 1)
-sample_obj <- Seurat::RunUMAP(sample_obj, dims = 1:ndims, reduction = "harmony")
-Seurat::DimPlot(sample_obj, reduction = "umap", label = T, group.by = "library_id")
+# sample_obj <- SeuratObject::LoadSeuratRds(paste0("results/SCPCP000014_merged.h5Seurat"))
+# # Seurat::DimPlot(sample_obj, reduction = "umap", group.by = "library_id", split.by= "participant_id", ncol = 3)
+# sample_obj <- sample_obj[,sample_obj$participant_id == "SJWLM046146" ]
+# sample_obj <- Seurat::NormalizeData(sample_obj, normalization.method = "LogNormalize")
+# sample_obj <- Seurat::FindVariableFeatures(sample_obj, selection.method = "vst", nfeatures = 2000)
+# sample_obj <- Seurat::ScaleData(sample_obj, features = Seurat::VariableFeatures(object = sample_obj))
+# # obj <- Seurat::SCTransform(obj)
+# sample_obj <- Seurat::RunPCA(sample_obj, features = Seurat::VariableFeatures(object = sample_obj))
+# sample_obj <- harmony::RunHarmony(sample_obj, group.by.vars = "library_id")
+# ndims <- 50
+# sample_obj <- Seurat::FindNeighbors(sample_obj, dims = 1:ndims, reduction = "harmony")
+# sample_obj <- Seurat::FindClusters(sample_obj, resolution = 0.8, algorithm = 1)
+# sample_obj <- Seurat::RunUMAP(sample_obj, dims = 1:ndims, reduction = "harmony")
+# Seurat::DimPlot(sample_obj, reduction = "umap", label = T, group.by = "library_id")
 
 ######## atlas ######## 
 path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"

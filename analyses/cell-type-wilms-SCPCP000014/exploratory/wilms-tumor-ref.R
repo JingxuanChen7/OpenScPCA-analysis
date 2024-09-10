@@ -2,6 +2,22 @@ library(dplyr)
 library(Seurat)
 library(SingleCellExperiment)
 
+####################### wilms tumor markers - Young et al. supplemental ####################### 
+# path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"
+# path_supp_table <- paste0(path_ref, "/aat1699-young-tabless1-s12-revision2.xlsx")
+# markers <- readxl::read_xlsx(path_supp_table, sheet = 4, skip = 1) %>%
+#   filter(isKeyGene == 1)
+# cell_manifest <- readxl::read_xlsx(path_supp_table, sheet = 11, skip = 1) %>%
+#   select(c(barcode, SangerID, DropletID, ClusterID, QCpass, Source))
+# cluster_info <- readxl::read_xlsx(path_supp_table, sheet = 2, skip = 1) %>%
+#   select(c(Cluster_ID,Category,Cell_type1,Cell_type2,Cell_type3))
+# 
+# filter_markers <- left_join(markers, cluster_info, by = c("Cluster" = "Cluster_ID") ) %>%
+#   filter(!is.na(Category) & !is.na(Cell_type1)) %>%
+#   filter(grepl("Wilms_tumour",Cell_type1))
+# 
+# unique(filter_markers$Symbol)
+
 ######## sce object preparation ######## 
 path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"
 path_supp_table <- paste0(path_ref, "/aat1699-young-tabless1-s12-revision2.xlsx")
@@ -68,13 +84,16 @@ SeuratObject::SaveSeuratRds(obj, file = paste0("results/aat1699-young_wilms.h5Se
 ######## marker gene ######## 
 obj <- SeuratObject::LoadSeuratRds(paste0("results/aat1699-young_wilms.h5Seurat"))
 
-coldata <- obj@meta.data %>% as.data.frame()
+coldata <- obj@meta.data %>% as.data.frame() %>%
+  filter(grepl("Kid_T", Source)) %>%
+  filter(Category == "Kidney_tumour")
 # calculate marker genes for compartments
-Idents(obj) <- obj@meta.data[["Category"]]
+Idents(obj) <- obj@meta.data[["Cell_type1"]]
 markers_all <- FindMarkers(object = obj, 
                            only.pos = TRUE,
                            assay = "RNA",
-                           ident.1 = c("Kidney_tumour","Kidney_tumour_immune"),
+                           ident.1 = c("Wilms_tumour"),
+                           ident.2 = "Normal_cell",
                            logfc.threshold = 0.25) 
 write.csv(markers_all, file = paste0("./results/aat1699-young_wilms_degenes_tumor.csv"))
 

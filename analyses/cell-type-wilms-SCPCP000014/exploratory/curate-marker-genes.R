@@ -1,21 +1,8 @@
 library(dplyr)
 library(Seurat)
 library(ggpubr)
-####################### wilms tumor markers - Young et al. ####################### 
-path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"
-path_supp_table <- paste0(path_ref, "/aat1699-young-tabless1-s12-revision2.xlsx")
-markers <- readxl::read_xlsx(path_supp_table, sheet = 4, skip = 1) %>%
-  filter(isKeyGene == 1)
-cell_manifest <- readxl::read_xlsx(path_supp_table, sheet = 11, skip = 1) %>%
-  select(c(barcode, SangerID, DropletID, ClusterID, QCpass, Source))
-cluster_info <- readxl::read_xlsx(path_supp_table, sheet = 2, skip = 1) %>%
-  select(c(Cluster_ID,Category,Cell_type1,Cell_type2,Cell_type3))
+library(RColorBrewer)
 
-filter_markers <- left_join(markers, cluster_info, by = c("Cluster" = "Cluster_ID") ) %>%
-  filter(!is.na(Category) & !is.na(Cell_type1)) %>%
-  filter(grepl("Wilms_tumour",Cell_type1))
-
-unique(filter_markers$Symbol)
 ####################### kidney atlas ####################### 
 
 path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"
@@ -80,20 +67,21 @@ var_genes <- setNames(object = var_genes, c("CNT","FIB","MD","MFIB","OMCD-PC"))
 # )
 # var_genes <- setNames(object = var_genes, c("CNT","FIB"))
 # from literature
-var_genes <- c("WT1", # well known
+var_genes <- c(
                "BCL6", "CCNA1", "CTHRC1", "DGKD", "EPB41L4B", "ERRFI1", "LRRC40", "NCEH1", "NEBL", "PDSS1", "ROR1", "RTKN2", # 35480093
                "TRIM28","FBXW7","NYNRIN","KDM3B", # 30885698
                "EMCN", # "CCNA1" 38937666
-               "TCF3", # 34278464
-               "COL4A3","COL4A4","KCNJ1","MME","SLC12A1" # 33564352, low in tumor
+               "TCF3" # 34278464
+               #"COL4A3","COL4A4","KCNJ1","MME","SLC12A1" # 33564352, low in tumor
                )
 
-var_genes <- c("PAX2","NCAM1","CALR","VIM","NEBL","ROR1")
+
 Seurat::DotPlot(sample_obj, features = var_genes, cols = c("blue","red")) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-# scaled_genes <- GetAssayData(sample_obj, slot = "scale.data") %>% rownames()
-# var_genes <- unlist(var_genes)[unlist(var_genes) %in% scaled_genes ]
+scaled_genes <- GetAssayData(sample_obj, slot = "scale.data") %>% rownames()
+var_genes <- unlist(var_genes)[unlist(var_genes) %in% scaled_genes ]
 Seurat::DoHeatmap(sample_obj, features = var_genes, draw.lines = T ) 
+Seurat::FeaturePlot(sample_obj, features = var_genes)
 # # from cell marker
 # gs_list <- by(markers$Symbol, markers$cell_name, head, n=10) 
 # var_genes <-  unlist(var_genes)[unlist(var_genes) %in% scaled_genes ]
@@ -113,4 +101,30 @@ markers <- read.csv(paste0("./results/aat1699-young_wilms_degenes_tumor.csv")) %
   filter(avg_log2FC > 0.5 & p_val_adj < 0.05 & pct.1 > 0.4)
 var_genes <- markers$X
 
+colors <- c("blue","gray","red")
 
+sample_obj_plot <- Seurat::AddModuleScore(sample_obj, features = list(var_genes),name = "tumor")
+Seurat::FeaturePlot(sample_obj_plot, features = "tumor1") +
+  scale_colour_gradientn(colours = colors)
+p1 <- Seurat::DotPlot(sample_obj_plot, features = "tumor1") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_colour_gradientn(colours = colors)# + ggtitle("avg_modulescore")
+p2 <- Seurat::DotPlot(sample_obj_plot, features = var_genes) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  scale_colour_gradientn(colours = colors) 
+ggarrange(p1, p2, widths = c(1,5), common.legend = T, legend = "right")
+# Seurat::DoHeatmap(sample_obj, features = var_genes, draw.lines = T, slot = "data" ) 
+
+scaled_genes <- GetAssayData(sample_obj, slot = "scale.data") %>% rownames()
+var_genes <- unlist(var_genes)[unlist(var_genes) %in% scaled_genes ]
+# Seurat::DoHeatmap(sample_obj, features = var_genes, draw.lines = T ) 
+sample_obj_plot <- Seurat::AddModuleScore(sample_obj, features = list(var_genes),name = "tumor")
+Seurat::FeaturePlot(sample_obj_plot, features = "tumor1") +
+  scale_colour_gradientn(colours = colors)
+p1 <- Seurat::DotPlot(sample_obj_plot, features = "tumor1") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_colour_gradientn(colours = colors)# + ggtitle("avg_modulescore")
+p2 <- Seurat::DotPlot(sample_obj_plot, features = var_genes) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  scale_colour_gradientn(colours = colors) 
+ggarrange(p1, p2, widths = c(1,5), common.legend = T, legend = "right")
