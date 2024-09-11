@@ -50,7 +50,10 @@ path_proj <- "/home/lightsail-user/wilms_tumor/OpenScPCA-analysis/data/current/S
 sample <- "SCPCS000517"; library <- "SCPCL000849"
 sample_obj <- SeuratObject::LoadSeuratRds(paste0("results/",sample,".h5Seurat"))
 
-# from azimuth sample-only
+# obj for merged samples
+obj <- SeuratObject::LoadSeuratRds(paste0("results/SCPCP000014_merged.h5Seurat"))
+
+# from azimuth (human kidney) run a sample-only
 var_genes <- list(
   list("SLC8A1","NFIB","SLIT3","FOXO1","PCDH7"),
   list("COL1A2","COL6A3","PDGFRA","ZEB2"),
@@ -59,32 +62,6 @@ var_genes <- list(
   list("NAV3")
 )
 var_genes <- setNames(object = var_genes, c("CNT","FIB","MD","MFIB","OMCD-PC"))
-# # from merged cohort (not working)
-# var_genes <- list(
-#   list("MECOM","NFIA","FMN1","SLC26A7","PAX8"),
-#   list("RBPMS","C7","ZFPM2-AS1","COL4A1","THBS1")
-# 
-# )
-# var_genes <- setNames(object = var_genes, c("CNT","FIB"))
-# from literature
-var_genes <- c(
-               "BCL6", "CCNA1", "CTHRC1", "DGKD", "EPB41L4B", "ERRFI1", "LRRC40", "NCEH1", "NEBL", "PDSS1", "ROR1", "RTKN2", # 35480093
-               "TRIM28","FBXW7","NYNRIN","KDM3B", # 30885698
-               "EMCN", # "CCNA1" 38937666
-               "TCF3" # 34278464
-               #"COL4A3","COL4A4","KCNJ1","MME","SLC12A1" # 33564352, low in tumor
-               )
-
-
-Seurat::DotPlot(sample_obj, features = var_genes, cols = c("blue","red")) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-scaled_genes <- GetAssayData(sample_obj, slot = "scale.data") %>% rownames()
-var_genes <- unlist(var_genes)[unlist(var_genes) %in% scaled_genes ]
-Seurat::DoHeatmap(sample_obj, features = var_genes, draw.lines = T ) 
-Seurat::FeaturePlot(sample_obj, features = var_genes)
-# # from cell marker
-# gs_list <- by(markers$Symbol, markers$cell_name, head, n=10) 
-# var_genes <-  unlist(var_genes)[unlist(var_genes) %in% scaled_genes ]
 
 # from science 2019 supp figure
 var_genes <- list(
@@ -96,11 +73,83 @@ var_genes <- list(
 )
 var_genes <- setNames(object = var_genes, c("Vasc","DevNephron","Immune","Stroma","Tumor"))
 
+# from science 2018, table S3 # mostly not expressed
+var_genes <- list(
+  list("SIX2","CITED1","PAX2","SIX1"),
+  list("ATP6V0D2","CLCNKB","SLC26A4","SLC4A1"),
+  list("SFRP2","EMILIN1","MMP2"),
+  list("PTPRO","PODXL"),
+  list("CLDN16","SLC12A1"),
+  list("PDGFRB","ACTA2"),
+  list("HNF1B","RET","GATA3","ELF3","POU3F3","TFCP2L1","CDH16"),
+  list("PLVAP","SLC14A1","VCAM1","KDR","PTPRB","PECAM1")
+)
+var_genes <- setNames(object = var_genes, c("CM","CD","FIB","Glomerulus","LOH","MFIB","UB","Vasc"))
+
+# from running azimuth (fetal development) with one sample
+var_genes <- list(
+  list("COL1A1","COL1A2","ENOX1","PRICKLE1","RERG","FBN2","ROBO2","PLEKHH2"),
+  list("VEGFA"),
+  list("CNTNAP2","DPF3","BNC2","CSMD1","ITGB8","NLGN1"),
+  list("ERBB4","PAX2","GFRA1","LTBP1","IGF2BP3","EDIL3","CNTN5","PTPRG","GPC3","DMD")
+
+)
+var_genes <- setNames(object = var_genes, c("Stroma","EPI","UB","MC"))
+
+# from literature https://www.frontiersin.org/journals/cell-and-developmental-biology/articles/10.3389/fcell.2020.00183/full
+var_genes <- list(
+  list("HOX11","OSR1",'EYA1',"PAX2","SIX1","SIX2","GDNF"),
+  list("WNT4","FGF8","PAX8","LHX1","BRN1"),
+  list("NOTCH1","NOTCH2"), # WNT4, LHX1
+  list("KDR") # LHX1
+  
+)
+var_genes <- setNames(object = var_genes, c("CM","PTA/RV","CSB","SSB"))
+
+# from azimuth database (fetal)
+var_genes <- list(
+  list('GCSAML', 'RARB', 'ITGA2B', 'TM4SF18', 'HPSE', 'PPBP', 'MYO1B', 'RP11-556I14.2', 'CD86'), #CHRM3
+  list('PRRX1', 'SCARA5', 'CTNNA2', 'SFRP2', 'EBF2', 'COL12A1', 'PPARG', 'POSTN', 'MTND4P12', 'IGFBP5'), 
+  list('SRGN', 'CD74', 'NR4A3', 'SAMHD1', 'LGMN', 'FOS', 'CSF1R', 'PLAUR', 'HLA-DRA'), # MTND4P12
+  list('MEIS2', 'CHRM3', 'LDB2', 'KCNIP4', 'PLVAP', 'ASIC2', 'PPAP2B', 'LINC00478', 'HSPG2'), # IGFBP5
+  list('MECOM', 'NAALADL2', 'PKHD1', 'INADL', 'PAX8', 'GATA3', 'COBLL1', 'BMPR1B', 'DCDC2', 'PAX2'),
+  list('KIAA1217', 'PALLD', 'MEIS1', 'FLRT2', 'TNC', 'NR2F2', 'KIF26B', 'CCBE1'), # 'MEIS2' GPC3
+  list('DACH1', 'EYA1', 'HMGA2', 'GPC3', 'TRABD2B', 'ITGA8', 'PTPN14', 'WT1', 'BMPER') # PAX2
+)
+var_genes <- setNames(object = var_genes, c("Megakaryocytes","stroma","Myeloid","Vasc","UB","Mesangial","MetaNep"))
+
+# plotting
+plot_obj <- sample_obj
+colors <- c("blue","gray","red")
+Seurat::DotPlot(plot_obj, features = var_genes) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_colour_gradientn(colours = colors)
+
+scaled_genes <- GetAssayData(plot_obj, slot = "scale.data") %>% rownames()
+var_genes <- unlist(var_genes)[unlist(var_genes) %in% scaled_genes ]
+Seurat::DoHeatmap(plot_obj, features = var_genes, draw.lines = T ) 
+Seurat::FeaturePlot(plot_obj, features = var_genes, cols = colors)
+# # from cell marker
+# gs_list <- by(markers$Symbol, markers$cell_name, head, n=10) 
+# var_genes <-  unlist(var_genes)[unlist(var_genes) %in% scaled_genes ]
+
+
+
+# wilms tumor markers from literature
+var_genes <- c(
+  "BCL6", "CCNA1", "CTHRC1", "DGKD", "EPB41L4B", "ERRFI1", "LRRC40", "NCEH1", "NEBL", "PDSS1", "ROR1", "RTKN2", # 35480093
+  "TRIM28","FBXW7","NYNRIN","KDM3B", # 30885698
+  "EMCN", # "CCNA1" 38937666
+  "TCF3" # 34278464
+  #"COL4A3","COL4A4","KCNJ1","MME","SLC12A1" # 33564352, low in tumor
+)
+
 # from science 2018, findmarkers tumor genes
 markers <- read.csv(paste0("./results/aat1699-young_wilms_degenes_tumor.csv")) %>%
   filter(avg_log2FC > 0.5 & p_val_adj < 0.05 & pct.1 > 0.4)
 var_genes <- markers$X
 
+# plotting
 colors <- c("blue","gray","red")
 
 sample_obj_plot <- Seurat::AddModuleScore(sample_obj, features = list(var_genes),name = "tumor")

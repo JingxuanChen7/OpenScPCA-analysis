@@ -2,9 +2,15 @@ library(Seurat)
 library(dplyr)
 library(ggpubr)
 
+path_proj <- "/home/lightsail-user/wilms_tumor/OpenScPCA-analysis/data/current/SCPCP000014"
+path_meta <- paste0(path_proj,"/single_cell_metadata.tsv")
+meta <- read.table(path_meta, sep = "\t", header = T, stringsAsFactors = F)
+
 ######## atlas
 
 ref_obj <- SeuratObject::LoadSeuratRds(paste0("results/kidneyatlas.h5Seurat"))
+
+# ref_obj <- SeuratObject::LoadSeuratRds(paste0("results/kidneyatlas_mature.h5Seurat"))
 
 # ######### wilms tumor
 # path_ref <- "/home/lightsail-user/wilms_tumor/ref_data"
@@ -42,8 +48,11 @@ ref_obj <- SeuratObject::LoadSeuratRds(paste0("results/kidneyatlas.h5Seurat"))
 
 
 ######### dataset per sample ######### 
-
-path_proj <- "/home/lightsail-user/wilms_tumor/OpenScPCA-analysis/data/current/SCPCP000014"
+# generate plots for all samples
+source(file = "exploratory/analysis_functions.R")
+for (sample in meta$scpca_sample_id) {
+  run_anchorTrans(ref_obj = ref_obj, sample = sample)
+}
 
 sample <- "SCPCS000517"; library <- "SCPCL000849"
 sample_obj <- SeuratObject::LoadSeuratRds(paste0("results/",sample,".h5Seurat"))
@@ -66,8 +75,8 @@ anchors <- FindTransferAnchors(reference = ref_obj, query = sample_obj)
 
 # clean annotation
 ref_obj@meta.data <- ref_obj@meta.data %>%
-  mutate(annot = case_when(compartment == "stroma" ~ "stroma",
-                           compartment == "immune" ~ "immune",
+  mutate(annot = case_when(#compartment == "stroma" ~ "stroma",
+                           #compartment == "immune" ~ "immune",
                            # grepl("S shaped body", celltype) ~ "S shaped body",
                            TRUE ~ celltype))
 ref_obj@meta.data$annot <- factor(ref_obj@meta.data$annot)
@@ -99,6 +108,16 @@ toprow <- ggpubr::ggarrange(p1, p2, widths = c(1.5,1))
 ggpubr::ggarrange(toprow, p3, ncol = 1)
 Seurat::DimPlot(sample_obj, reduction = "umap", group.by = "predicted.id", 
                 label = F, cols = color, split.by = "predicted.id", ncol = 3, alpha = 0.1)
+
+# find markers based on anchor transfer results
+marker_obj <- sample_obj
+marker_obj <- marker_obj[,marker_obj$predicted.id != 'Unknown']
+Idents(marker_obj) <- marker_obj$predicted.id
+markers_all <- FindAllMarkers(object = marker_obj, 
+                              only.pos = TRUE,
+                              logfc.threshold = 0.25) 
+write.csv(markers_all, file = paste0("./results/",sample,"degenes_anchor.csv"))
+
 
 ######### dataset merged ######### 
 

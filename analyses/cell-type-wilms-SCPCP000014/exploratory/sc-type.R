@@ -25,17 +25,26 @@ gs_list <- gs_list$gs_positive
 ###### marker genes from atlas-compart
 markers_file <- read.csv(paste0("./results/degenes_compart.csv"))
 markers <- markers_file %>%
-  filter(p_val_adj < 0.05 & pct.1 > 0.5 & pct.2 < 0.1 )
-gs_list <- by(markers$gene, markers$cluster, head, n=10)
-gs_list$fetal_nephron <- gs_list$fetal_nephron[gs_list$fetal_nephron != "EPCAM"]
+  filter(p_val_adj < 0.05 & pct.1 > 0.5) %>%
+  arrange(desc(avg_log2FC))
+gs_list <- by(markers$gene, markers$cluster, head, n=20)
+# gs_list$fetal_nephron <- gs_list$fetal_nephron[gs_list$fetal_nephron != "EPCAM"]
 # marker genes from atlas-celltype
 markers_file <- read.csv(paste0("./results/degenes_celltype.csv"))
 markers <- markers_file %>%
-  filter(p_val_adj < 0.05 & pct.1 > 0.5 & pct.2 < 0.1 )
-gs_list <- by(markers$gene, markers$cluster, head, n=10)
+  filter(p_val_adj < 0.05 & pct.1 > 0.5 ) %>%
+  arrange(desc(avg_log2FC))
+gs_list <- by(markers$gene, markers$cluster, head, n=20)
+
+###### marker gene by anchor transfer
+markers_file <- read.csv(paste0("./results/",sample,"degenes_anchor.csv"))
+markers <- markers_file %>%
+  filter(p_val_adj < 0.05 & pct.1 > 0.5) %>%
+  arrange(desc(avg_log2FC))
+gs_list <- by(markers$gene, markers$cluster, head, n=20)
 
 ###### maker genes curated by cellMarker
-gs_list <- by(markers$marker, markers$cell_name, head, n=10)
+#gs_list <- by(markers$marker, markers$cell_name, head, n=10)
 
 # # remove genes that not present in object and duplicate hits
 # dupgenes <- unique(unlist(gs_list)[duplicated(unlist(gs_list))])
