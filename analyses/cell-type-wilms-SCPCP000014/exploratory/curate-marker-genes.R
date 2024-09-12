@@ -118,6 +118,36 @@ var_genes <- list(
 )
 var_genes <- setNames(object = var_genes, c("Megakaryocytes","stroma","Myeloid","Vasc","UB","Mesangial","MetaNep"))
 
+# from lifemap (early stage)
+var_genes <- list(
+  list('EYA1','FOXC1','FOXC2','GDNF','GFRA1','NCAM1','OSR1','PAX2','SALL1','SIX1',"SIX2",'WT1','HOXD11'),
+  list('RET','WNT11')
+)
+var_genes <- setNames(object = var_genes, c("MM","WD"))
+
+# from lifemap ( stage of UB, CM)
+var_genes <- list(
+  list('CITED1','SIX2','MUC1'),
+  list('FOXD1','RARA','RARB'),
+  list('GFRA1','RET','WNT9B') # GFRA1 both in MM and UB
+)
+var_genes <- setNames(object = var_genes, c("CM","InS","UB"))
+
+# from lifemap (following stages)
+var_genes <- list(
+  list('AQP2','CLDN3','CLDN4','CLDN8','SCNN1B','SCNN1G'),
+  list('BMP2','DKK1','DLL1','GREB1','LHX1','PAPSS2','PCSK9','POU3F3'),
+  list('TMEM100','WT1'),
+  list('WNT4'),
+  list('FOXC2','ANO1'),
+  list('CDH6','IRX3'),
+  list('MAFB','NPHS1','NPHS2')
+  
+)
+var_genes <- setNames(object = var_genes, c("CD","DRV","PRV","PAC","CBB","SBBM","SBBP"))
+
+# interesting genes https://www.nature.com/articles/s41581-022-00598-5
+
 # plotting
 plot_obj <- sample_obj
 colors <- c("blue","gray","red")
