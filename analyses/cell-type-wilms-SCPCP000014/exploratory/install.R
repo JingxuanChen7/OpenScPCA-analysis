@@ -28,6 +28,13 @@ BiocManager::install('glmGamPoi')
 install.packages("viridis")
 install.packages("pheatmap")
 
+devtools::install_github('immunogenomics/presto')
+
+devtools::install_github("wjawaid/enrichR")
+
+# hdf5 tools
+#	sudo apt-get install libhdf5-dev
+devtools::install_github("mojaveazure/seurat-disk")
 
 # install tensorflow & cellassign
 install.packages("tensorflow")
@@ -48,11 +55,5 @@ devtools::install_github("JingxuanChen7/cellassign")
 # pip install tf-keras
 
 
-devtools::install_github('immunogenomics/presto')
 
-devtools::install_github("wjawaid/enrichR")
-
-# hdf5 tools
-#	sudo apt-get install libhdf5-dev
-devtools::install_github("mojaveazure/seurat-disk")
 
