@@ -64,13 +64,20 @@ run_anchorTrans <- function(path_anal, scratch_out_dir, results_out_dir, plots_o
   
 }
 
-plot_anchorTrans <- function(path_anal, scratch_out_dir, results_out_dir, plots_out_dir,
+plot_anchorTrans <- function(path_anal, 
+                             scratch_out_dir = NULL, 
+                             results_out_dir = NULL, 
+                             plots_out_dir = NULL,
                              sample_obj,
                              library, 
                              level = "celltype",
-                             nanchors){
-  filename <- file.path(plots_out_dir, paste0(library, "_", level,".pdf"))
-  filename_core <- file.path(plots_out_dir, paste0(library, "_", level,"_core.png"))
+                             nanchors = 0,
+                             plot_cluster = "seurat_clusters",
+                             internal = FALSE){
+  if (internal == FALSE) {
+    filename <- file.path(plots_out_dir, paste0(library, "_", level,".pdf"))
+    filename_core <- file.path(plots_out_dir, paste0(library, "_", level,"_core.png"))
+  }
   
   # anchor transfer plot
   pred_ids <- unique(sample_obj$predicted.id)
@@ -82,11 +89,11 @@ plot_anchorTrans <- function(path_anal, scratch_out_dir, results_out_dir, plots_
   p1 <- Seurat::DimPlot(sample_obj, reduction = "umap", group.by = "predicted.id", 
                         label = F, cols = color, alpha = 0.1) +
     ggtitle(paste0(library))
-  p2 <- Seurat::DimPlot(sample_obj, reduction = "umap", label = T)
+  p2 <- Seurat::DimPlot(sample_obj, reduction = "umap", group.by = plot_cluster, label = T)
   # df <- sample_obj@meta.data %>%
   #   dplyr::group_by(seurat_clusters, predicted.id) %>%
   #   dplyr::count(name = "sum")
-  p3 <- ggplot(sample_obj@meta.data, aes(x = seurat_clusters, fill =  predicted.id)) +
+  p3 <- ggplot(sample_obj@meta.data, aes(x = get(plot_cluster), fill = predicted.id)) +
     geom_bar(width = 0.5, position = "fill") +
     scale_fill_manual(values = color) +
     labs(y = "Proportion of cells")
@@ -99,6 +106,10 @@ plot_anchorTrans <- function(path_anal, scratch_out_dir, results_out_dir, plots_
     geom_histogram(bins = 100) +
     xlim(0,1) + 
     ggtitle(paste0("Prediction score distribution ", library, ", nanchors = ",nanchors))
+  
+  # for internal use
+  if (internal == TRUE) return(p)
+  
   
   # save plots
   multi_page <- ggpubr::ggarrange(p, p_split, p_hist,

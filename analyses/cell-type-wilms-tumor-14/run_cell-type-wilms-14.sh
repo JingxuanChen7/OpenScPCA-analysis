@@ -58,3 +58,11 @@ Rscript scripts/01_anchor_transfer_seurat.R \
   --reference "${ref_seurat}" \
   --metadata "${meta_path}" \
   $TEST_FLAG
+
+# generate inferCNV
+step_name="03_cnv"
+scratch_dir_step="scratch/${step_name}" && mkdir -p ${scratch_dir_step}
+
+Rscript ../cell-type-ewings/scripts/cnv-workflow/00-make-gene-order-file.R \
+  --local_ref_dir ${scratch_dir_step} \
+  --scratch_dir ${scratch_dir_step}
