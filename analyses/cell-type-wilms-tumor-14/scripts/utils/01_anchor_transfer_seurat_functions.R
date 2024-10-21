@@ -107,8 +107,12 @@ plot_anchorTrans <- function(path_anal,
     xlim(0,1) + 
     ggtitle(paste0("Prediction score distribution ", library, ", nanchors = ",nanchors))
   
+  plots <- list()
+  plots[[1]] <- p
+  plots[[2]] <- p_split
+  plots[[3]] <- p_hist
   # for internal use
-  if (internal == TRUE) return(p)
+  if (internal == TRUE) return(plots)
   
   
   # save plots

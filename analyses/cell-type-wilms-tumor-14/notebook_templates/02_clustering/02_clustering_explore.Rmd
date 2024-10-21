@@ -1,0 +1,119 @@
+---
+title: "Clustering results"
+author: "Jingxuan Chen"
+date: "`r Sys.Date()`"
+output: html_document
+params:
+  library_id: SCPCL000846
+---
+
+## Introduction
+
+In this notebook, we'll explore clustering results.
+
+Before rendering this notebook, make sure to: - Run standard Seurat workflow using `scripts/00_preprocessing_rds.R`. - Run anchor transfer using `scripts/01_anchor_transfer_seurat.R`. - Run Self-assembling manifolds (SAM) with `scripts/02_clustering.R` for an alternative feature selection strategy.
+
+## Setup
+
+### Packages
+
+```{r packages}
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(Seurat)
+  library(ggplot2)
+})
+```
+
+### Paths
+
+#### Base directories
+
+```{r base paths}
+# The base path for the OpenScPCA repository, found by its (hidden) .git directory
+path_repo <- rprojroot::find_root(rprojroot::is_git_root)
+
+# The path to this module
+path_anal <- file.path(path_repo,"analyses","cell-type-wilms-tumor-14") 
+```
+
+#### Input and output files
+
+Only run for one sample
+
+```{r paths}
+library_id <- "SCPCL000850"
+
+# Preprocessing obj path
+pre_dir <- file.path(path_anal, "scratch", "00_preprocessing_rds")
+pre_obj <- SeuratObject::LoadSeuratRds( file.path(pre_dir, paste0(library,".rdsSeurat")) )
+
+# Anchor transfer path (LogNormalize ver.)
+anchor_dir <- file.path(path_anal, "results", "01_anchor_transfer_seurat", "RNA")
+celltype_predictions <- read.csv( file.path(anchor_dir, paste0(library, "_celltype.csv")) )
+compartment_predictions <- read.csv( file.path(anchor_dir, paste0(library, "_compartment.csv")) )
+
+# SAM path
+sam_dir <- file.path(path_anal, "scratch", "02_clustering")
+sam_obj <- readRDS( file.path(sam_dir, paste0("sam_",library,".rds")) )
+```
+
+```{r functions}
+source(file = file.path(path_repo,"packages","rOpenScPCA","R","calculate-clusters.R"))
+source(file = file.path(path_anal,"scripts","utils","01_anchor_transfer_seurat_functions.R"))
+```
+
+## Analysis content
+
+#### Standard Seurat workflow
+
+This workflow uses `SCTransform` normalization, Seurat feature selection, Louvain clustering, and UMAP dimensional reduction.
+
+```{r}
+pre_obj <- AddMetaData(object = pre_obj, metadata = celltype_predictions)
+
+plots <- plot_anchorTrans(path_anal = path_anal, 
+                 sample_obj = pre_obj,
+                 library = library, 
+                 level = "celltype",
+                 plot_cluster = "seurat_clusters",
+                 internal = TRUE)
+```
+
+```{r fig, fig.width=12}
+plots[[1]]
+```
+
+Perform Leiden algorithm for clustering
+
+```{r}
+cluster_df <- calculate_clusters(pre_obj, 
+                                 algorithm = "leiden", 
+                                 resolution = 1, objective_function = "modularity",
+                                 seed = 233)
+pre_obj <- AddMetaData(object = pre_obj, metadata = cluster_df)
+```
+
+```{r}
+pre_obj <- AddMetaData(object = pre_obj, metadata = celltype_predictions)
+plots <- plot_anchorTrans(path_anal = path_anal, 
+                 sample_obj = pre_obj,
+                 library = library, 
+                 level = "celltype",
+                 plot_cluster = "cluster",
+                 internal = TRUE)
+```
+
+```{r fig, fig.width=12}
+plots[[1]]
+```
+
+#### SAM workflow
+
+
+## Session Info
+
+```{r session info}
+# record the versions of the packages used in this analysis and other environment information
+sessionInfo()
+```
