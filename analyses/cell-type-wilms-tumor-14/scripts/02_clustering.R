@@ -32,20 +32,20 @@ purrr::walk2(
 )
 
 
-obj <- SeuratObject::LoadSeuratRds( file.path(path_anal,"scratch","00_preprocessing_rds",paste0(library,".rdsSeurat")) )
-# DimPlot(obj, group.by = "cluster")
-# cluster_df <- calculate_clusters(obj,
-#                                  algorithm = "leiden",
-#                                  resolution = 0.006, objective_function = "CPM",
+# obj <- SeuratObject::LoadSeuratRds( file.path(path_anal,"scratch","00_preprocessing_rds",paste0(library,".rdsSeurat")) )
+# # DimPlot(obj, group.by = "cluster")
+# # cluster_df <- calculate_clusters(obj,
+# #                                  algorithm = "leiden",
+# #                                  resolution = 0.006, objective_function = "CPM",
+# #                                  seed = 233)
+# cluster_df <- calculate_clusters(obj, 
+#                                  algorithm = "leiden", 
+#                                  resolution = 1, objective_function = "modularity",
 #                                  seed = 233)
-cluster_df <- calculate_clusters(obj, 
-                                 algorithm = "leiden", 
-                                 resolution = 1, objective_function = "modularity",
-                                 seed = 233)
-
-
-obj <- AddMetaData(object = obj, metadata = cluster_df)
-DimPlot(obj, group.by = "cluster")
+# 
+# 
+# obj <- AddMetaData(object = obj, metadata = cluster_df)
+# DimPlot(obj, group.by = "cluster")
 
 
 # # SCTransform
@@ -67,17 +67,17 @@ DimPlot(obj, group.by = "cluster")
 # plt <- import("matplotlib.pyplot")
 # sam$scatter()
 # plt$show()
-obj <- readRDS( file.path(scratch_out_dir, paste0("sam_",library,".rds")) )
-DimPlot(obj, group.by = "leiden_clusters")
-
-cluster_df <- calculate_clusters(obj, 
-                                 algorithm = "leiden", 
-                                 resolution = 1, objective_function = "modularity",
-                                 seed = 233)
-
-
-obj <- AddMetaData(object = obj, metadata = cluster_df)
-DimPlot(obj, group.by = "cluster")
+# obj <- readRDS( file.path(scratch_out_dir, paste0("sam_",library,".rds")) )
+# DimPlot(obj, group.by = "leiden_clusters")
+# 
+# cluster_df <- calculate_clusters(obj, 
+#                                  algorithm = "leiden", 
+#                                  resolution = 1, objective_function = "modularity",
+#                                  seed = 233)
+# 
+# 
+# obj <- AddMetaData(object = obj, metadata = cluster_df)
+# DimPlot(obj, group.by = "cluster")
 # SeuratDisk::Convert(file.path(scratch_out_dir, paste0("sam_",library,".h5ad")) , dest = "h5seurat", overwrite = T)
 # sam_obj <- SeuratDisk::LoadH5Seurat( file.path(scratch_out_dir, paste0("sam_",library,".h5seurat")) )
 #sam_obj <- schard::h5ad2seurat( filename = file.path(scratch_out_dir, paste0("sam_",library,".h5ad")) )
