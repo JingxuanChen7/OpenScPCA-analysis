@@ -13,3 +13,14 @@ dependencies:
   - jq>=1.7
   - pre-commit>=3.6
   - session-info>=1.0
+  - anndata=0.10
+  - leidenalg=0.10
+  - louvain
+  - dill
+  - harmonypy
+  - umap-learn
+  - matplotlib
+  - loompy
+  - pip
+  - pip:
+      - sam-algorithm==1.0.2

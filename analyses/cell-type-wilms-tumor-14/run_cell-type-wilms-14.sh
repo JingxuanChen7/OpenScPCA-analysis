@@ -57,7 +57,10 @@ Rscript scripts/00_preprocessing_rds.R
 #   --reference "${ref_seurat}" \
 #   --metadata "${meta_path}" \
 #   --libraries SCPCL000846,SCPCL000847  \
-#    $TEST_FLAG
+#   --run_LogNormalize \
+#   $SCT_FLAG \
+#   $TEST_FLAG
+
 
 # run all samples
 Rscript scripts/01_anchor_transfer_seurat.R \
@@ -70,3 +73,7 @@ Rscript scripts/01_anchor_transfer_seurat.R \
 Rscript scripts/summary_results.R \
   --metadata "${meta_path}" \
   $TEST_FLAG
+
+## Exploring clustering
+Rscript scripts/02_feature_selection_sam.R \
+  --metadata "${meta_path}"

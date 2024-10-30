@@ -65,6 +65,11 @@ sudo apt install -y libglpk40 \
   libharfbuzz-dev libfribidi-dev libtiff5-dev
 ```
 - Versions for required R packages listed in `./renv.lock`
+- Install Conda environment
+```bash
+conda activate openscpca
+conda-lock install -n openscpca-cell-type-wilms-tumor-14 conda-lock.yml
+```
 
 ## Computational resources
 
